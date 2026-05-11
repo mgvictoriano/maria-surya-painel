@@ -11,3 +11,5 @@ data/
 .vscode/
 *.swp
 *.swo
+frontend/dist/
+frontend/node_modules/
