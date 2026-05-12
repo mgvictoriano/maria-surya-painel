@@ -205,8 +205,7 @@ export default function Dividas() {
         <form className="txn-form" onSubmit={salvar}>
           <input className="input" placeholder="Credor (ex: Fornecedor, Banco)" value={form.credor} onChange={(e) => setForm({ ...form, credor: e.target.value })} required />
           <input className="input" placeholder="Descrição (ex: Reforma da cozinha)" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
-          <input className="input" type="number" step="0.01" min="0" placeholder="Valor total da dívida" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
-                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} placeholder="R$ 0,00 (total da dívida)" required />
+          <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} placeholder="R$ 0,00 (total da dívida)" required />
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
@@ -225,18 +224,7 @@ export default function Dividas() {
                 <span>Falta: <strong style={{ color: '#c0392b' }}>{formatCurrency(Number(itemSelecionado.valor) - itemSelecionado._pago)}</strong></span>
               </div>
             </div>
-            <input
-              className="input"
-              type="number"
-              step="0.01"
-              min="0.01"
-              max={Number(itemSelecionado.valor) - itemSelecionado._pago}
-              placeholder="Valor pago agora"
-              value={formPagamento.valorPago}
-              onChange={(e) => setFormPagamento({ valorPago: e.target.value })}
-              required
-            />
-                        <CurrencyInput value={formPagamento.valorPago} onChange={(v) => setFormPagamento({ valorPago: v })} placeholder="R$ 0,00 (valor pago agora)" required />
+            <CurrencyInput value={formPagamento.valorPago} onChange={(v) => setFormPagamento({ valorPago: v })} placeholder="R$ 0,00 (valor pago agora)" required />
             <button className="btn btn-brand" type="submit">Confirmar Pagamento</button>
           </form>
         )}
@@ -247,8 +235,7 @@ export default function Dividas() {
         <form className="txn-form" onSubmit={salvarEdicao}>
           <input className="input" placeholder="Credor" value={formEditar.credor} onChange={(e) => setFormEditar({ ...formEditar, credor: e.target.value })} required />
           <input className="input" placeholder="Descrição" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} required />
-          <input className="input" type="number" step="0.01" min="0" placeholder="Valor total" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} required />
-                    <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
+          <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
           <button className="btn btn-brand" type="submit">Salvar Alterações</button>
         </form>
       </Modal>

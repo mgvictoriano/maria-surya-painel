@@ -117,9 +117,7 @@ export default function Retiradas({ usuario }) {
             <option>Pro-labore</option>
           </select>
           <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Motivo" required />
-          <input className="input" type="number" step="0.01" min="0" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
-                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
-                    <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
+          <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
@@ -133,7 +131,7 @@ export default function Retiradas({ usuario }) {
             <option>Pro-labore</option>
           </select>
           <input className="input" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} placeholder="Motivo" required />
-          <input className="input" type="number" step="0.01" min="0" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} placeholder="Valor" required />
+          <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
           <button className="btn btn-brand" type="submit">Salvar Alterações</button>
         </form>
       </Modal>

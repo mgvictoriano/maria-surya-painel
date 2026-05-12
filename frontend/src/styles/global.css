@@ -119,6 +119,27 @@ input {
   padding: 18px;
 }
 
+/* Versao gerencial: prioriza aproveitamento de tela no desktop */
+.dashboard-gerencial {
+  width: min(96vw, 1700px);
+  max-width: 1700px;
+}
+
+.dashboard-gerencial .kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.dashboard-gerencial .kpi-value {
+  font-size: clamp(34px, 2.3vw, 44px);
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.dashboard-gerencial .panel-grid {
+  grid-template-columns: 1.2fr 1fr;
+}
+
 .page-actions {
   display: flex;
   align-items: center;
@@ -557,6 +578,22 @@ input {
 }
 
 @media (max-width: 1080px) {
+  .dashboard-gerencial {
+    width: 100%;
+  }
+
+  .dashboard-gerencial .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .dashboard-gerencial .kpi-value {
+    font-size: clamp(28px, 4.2vw, 36px);
+  }
+
+  .dashboard-gerencial .panel-grid {
+    grid-template-columns: 1fr;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }

@@ -143,8 +143,7 @@ export default function DespesasVariaveis({ usuario }) {
         <form className="txn-form" onSubmit={salvar}>
           <input className="input" placeholder="Categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} required />
           <input className="input" placeholder="Fornecedor" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
-          <input className="input" type="number" step="0.01" min="0" placeholder="Valor" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
-                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
+          <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
@@ -154,8 +153,7 @@ export default function DespesasVariaveis({ usuario }) {
         <form className="txn-form" onSubmit={salvarEdicao}>
           <input className="input" placeholder="Categoria" value={formEditar.categoria} onChange={(e) => setFormEditar({ ...formEditar, categoria: e.target.value })} required />
           <input className="input" placeholder="Fornecedor" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} required />
-          <input className="input" type="number" step="0.01" min="0" placeholder="Valor" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} required />
-                    <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
+          <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
           <button className="btn btn-brand" type="submit">Salvar Alterações</button>
         </form>
       </Modal>

@@ -135,8 +135,7 @@ export default function DespesasFixas({ usuario }) {
             {CATEGORIAS_FIXAS.map((categoria) => <option key={categoria}>{categoria}</option>)}
           </select>
           <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descrição" />
-          <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
-                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
+          <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
           <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
             <option>Pago</option>
             <option>A pagar</option>
@@ -152,8 +151,7 @@ export default function DespesasFixas({ usuario }) {
             {CATEGORIAS_FIXAS.map((categoria) => <option key={categoria}>{categoria}</option>)}
           </select>
           <input className="input" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} placeholder="Descrição" />
-          <input className="input" type="number" min="0" step="0.01" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} placeholder="Valor" required />
-                    <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
+          <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
           <select className="input" value={formEditar.status} onChange={(e) => setFormEditar({ ...formEditar, status: e.target.value })}>
             <option>Pago</option>
             <option>A pagar</option>

@@ -158,7 +158,7 @@ export default function Dashboard({ usuario, onLogout }) {
     if (moduloAtivo === 'Relatorio') return <Relatorio usuario={usuario} />;
 
     return (
-      <div className="dashboard-wrap">
+      <div className="dashboard-wrap dashboard-gerencial">
 
       <section className="page-head">
         <div>
@@ -219,8 +219,7 @@ export default function Dashboard({ usuario, onLogout }) {
           </select>
           <input className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="Categoria" required />
           <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descrição" required />
-          <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
-                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
+          <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
