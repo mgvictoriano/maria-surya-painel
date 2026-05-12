@@ -11,8 +11,30 @@ function hasTag(descricao, tag) {
   return String(descricao || '').toLowerCase().includes(tag.toLowerCase());
 }
 
+function getTagValue(descricao, tag) {
+  const match = String(descricao || '').match(new RegExp(`\\[${tag}:([^\\]]+)\\]`, 'i'));
+  return match ? String(match[1]).trim().toLowerCase() : '';
+}
+
 function cleanDescricao(descricao) {
-  return String(descricao || '').replace(/\s*\[status:[^\]]+\]/i, '').trim();
+  return String(descricao || '')
+    .replace(/\s*\[status:[^\]]+\]/i, '')
+    .replace(/\s*\[rec:[^\]]+\]/i, '')
+    .trim();
+}
+
+function isRecorrente(descricao) {
+  const tag = getTagValue(descricao, 'rec');
+  // Compatibilidade: lançamentos antigos sem tag continuam recorrentes.
+  if (!tag) return true;
+  return tag === '1' || tag === 'sim' || tag === 'true';
+}
+
+function buildDescricao(base, status, recorrente) {
+  const texto = String(base || '').trim();
+  const statusTag = `[status:${String(status || 'a pagar').toLowerCase()}]`;
+  const recTag = `[rec:${recorrente ? '1' : '0'}]`;
+  return `${texto} ${statusTag} ${recTag}`.trim();
 }
 
 function toDateOnlyString(data) {
@@ -38,13 +60,14 @@ export default function DespesasFixas({ usuario }) {
   const [showForm, setShowForm] = useState(false);
   const [showEditar, setShowEditar] = useState(false);
   const [itemSelecionado, setItemSelecionado] = useState(null);
-  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar' });
+  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', recorrente: 'Sim' });
   const [itens, setItens] = useState([]);
   const [form, setForm] = useState({
     categoria: 'Aluguel',
     descricao: '',
     valor: '',
     status: 'A pagar',
+    recorrente: 'Sim',
     dataTrasacao: new Date().toISOString().split('T')[0]
   });
 
@@ -68,6 +91,7 @@ export default function DespesasFixas({ usuario }) {
 
     const historicoFixas = (respHistorico.transacoes || [])
       .filter(isFixa)
+      .filter((item) => isRecorrente(item.descricao))
       .sort((a, b) => toDateOnlyString(b.data_transacao).localeCompare(toDateOnlyString(a.data_transacao)));
 
     const jaLancadasNoMes = new Set((respMes.transacoes || []).filter(isFixa).map(keyFixa));
@@ -85,7 +109,7 @@ export default function DespesasFixas({ usuario }) {
       .filter(([chave]) => !jaLancadasNoMes.has(chave))
       .map(([, item]) => ({
         categoria: item.categoria,
-        descricao: `${cleanDescricao(item.descricao) || item.categoria} [status:a pagar]`,
+        descricao: buildDescricao(cleanDescricao(item.descricao) || item.categoria, 'a pagar', true),
         valor: Number(item.valor || 0),
       }))
       .filter((item) => item.valor > 0);
@@ -111,9 +135,9 @@ export default function DespesasFixas({ usuario }) {
 
   async function salvar(e) {
     e.preventDefault();
-    const descricao = `${form.descricao || form.categoria} [status:${form.status.toLowerCase()}]`;
+    const descricao = buildDescricao(form.descricao || form.categoria, form.status, form.recorrente === 'Sim');
     await transacaoService.criar('despesa', form.categoria, descricao, Number(form.valor), form.dataTrasacao);
-    setForm({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', dataTrasacao: new Date().toISOString().split('T')[0] });
+    setForm({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', recorrente: 'Sim', dataTrasacao: new Date().toISOString().split('T')[0] });
     setShowForm(false);
     carregar();
   }
@@ -127,7 +151,7 @@ export default function DespesasFixas({ usuario }) {
   async function toggleStatus(item) {
     const isPago = hasTag(item.descricao, '[status:pago]');
     const novoStatus = isPago ? 'a pagar' : 'pago';
-    const novaDesc = `${cleanDescricao(item.descricao) || item.categoria} [status:${novoStatus}]`;
+    const novaDesc = buildDescricao(cleanDescricao(item.descricao) || item.categoria, novoStatus, isRecorrente(item.descricao));
     await transacaoService.atualizar(item.id, { descricao: novaDesc });
     carregar();
   }
@@ -140,13 +164,14 @@ export default function DespesasFixas({ usuario }) {
       descricao: cleanDescricao(item.descricao),
       valor: String(item.valor || ''),
       status: isPago ? 'Pago' : 'A pagar',
+      recorrente: isRecorrente(item.descricao) ? 'Sim' : 'Não',
     });
     setShowEditar(true);
   }
 
   async function salvarEdicao(e) {
     e.preventDefault();
-    const novaDesc = `${formEditar.descricao || formEditar.categoria} [status:${formEditar.status.toLowerCase()}]`;
+    const novaDesc = buildDescricao(formEditar.descricao || formEditar.categoria, formEditar.status, formEditar.recorrente === 'Sim');
     await transacaoService.atualizar(itemSelecionado.id, {
       categoria: formEditar.categoria,
       descricao: novaDesc,
@@ -195,6 +220,10 @@ export default function DespesasFixas({ usuario }) {
             <option>Pago</option>
             <option>A pagar</option>
           </select>
+          <select className="input" value={form.recorrente} onChange={(e) => setForm({ ...form, recorrente: e.target.value })}>
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
@@ -210,6 +239,10 @@ export default function DespesasFixas({ usuario }) {
           <select className="input" value={formEditar.status} onChange={(e) => setFormEditar({ ...formEditar, status: e.target.value })}>
             <option>Pago</option>
             <option>A pagar</option>
+          </select>
+          <select className="input" value={formEditar.recorrente} onChange={(e) => setFormEditar({ ...formEditar, recorrente: e.target.value })}>
+            <option>Sim</option>
+            <option>Não</option>
           </select>
           <button className="btn btn-brand" type="submit">Salvar Alterações</button>
         </form>
