@@ -40,6 +40,12 @@ select {
 
 .app-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  flex-shrink: 0;
 }
 
 .auth-wrap {

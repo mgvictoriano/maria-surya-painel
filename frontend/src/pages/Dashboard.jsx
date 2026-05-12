@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import Entradas from './Entradas';
+import DespesasFixas from './DespesasFixas';
 
 const MODULOS = [
   'Dashboard',
@@ -139,8 +141,12 @@ export default function Dashboard({ usuario, onLogout }) {
     }
   }
 
+  // Renderizar módulo correto baseado em moduloAtivo
+  if (moduloAtivo === 'Entradas') return <Entradas />;
+  if (moduloAtivo === 'Desp. Fixas') return <DespesasFixas />;
+
   return (
-    <div className="dashboard-wrap">
+    <div className="app-shell">
       <header className="topbar">
         <div className="brand-block">
           <span className="brand-icon">MS</span>
@@ -169,6 +175,8 @@ export default function Dashboard({ usuario, onLogout }) {
           </button>
         ))}
       </nav>
+
+      <div className="dashboard-wrap">
 
       <section className="page-head">
         <div>
@@ -352,6 +360,7 @@ export default function Dashboard({ usuario, onLogout }) {
           </tbody>
         </table>
       </section>
+      </div>
     </div>
   );
 }
