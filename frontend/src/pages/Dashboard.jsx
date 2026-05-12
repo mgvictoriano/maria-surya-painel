@@ -323,6 +323,13 @@ export default function Dashboard({ usuario, onLogout }) {
       .slice(0, 6);
   }, [transacoesEfetivas]);
 
+  const tabelaTransacoes = useMemo(
+    () => [...transacoesEfetivas].sort(
+      (a, b) => parseDateOnly(getDataEfetiva(b)).getTime() - parseDateOnly(getDataEfetiva(a)).getTime()
+    ),
+    [transacoesEfetivas]
+  );
+
   useEffect(() => {
     carregarDados();
   }, []);
@@ -547,15 +554,15 @@ export default function Dashboard({ usuario, onLogout }) {
               </tr>
             )}
 
-            {!carregando && transacoesFiltradas.length === 0 && (
+            {!carregando && tabelaTransacoes.length === 0 && (
               <tr>
                 <td colSpan="6">Nenhuma transacao neste periodo.</td>
               </tr>
             )}
 
-            {!carregando && transacoesFiltradas.map((t) => (
+            {!carregando && tabelaTransacoes.map((t) => (
               <tr key={t.id}>
-                <td>{formatDate(t.data_transacao)}</td>
+                <td>{formatDate(getDataEfetiva(t))}</td>
                 <td>{t.tipo}</td>
                 <td>{t.categoria}</td>
                 <td>{t.descricao}</td>
