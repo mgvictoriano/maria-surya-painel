@@ -38,6 +38,12 @@ select {
   font-family: inherit;
 }
 
+button,
+select,
+input {
+  min-height: 42px;
+}
+
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -165,9 +171,12 @@ select {
   border-top: 0;
   padding: 10px 12px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 8px;
   border-radius: 0 0 16px 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .nav-pill {
@@ -178,6 +187,8 @@ select {
   padding: 8px 10px;
   font-weight: 700;
   cursor: pointer;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .nav-pill.active {
@@ -301,11 +312,13 @@ select {
   border: 1px solid #ddd5c8;
   border-radius: var(--radius);
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 760px;
 }
 
 .table th,
@@ -517,12 +530,61 @@ select {
 }
 
 @media (max-width: 700px) {
+  .app-shell {
+    overflow-x: hidden;
+  }
+
   .topbar {
     padding: 12px;
+    border-radius: 0;
+    position: sticky;
+    top: 0;
+    z-index: 40;
   }
 
   .brand-title {
-    font-size: 20px;
+    font-size: 18px;
+  }
+
+  .brand-subtitle {
+    font-size: 12px;
+  }
+
+  .nav-strip {
+    border-radius: 0;
+    position: sticky;
+    top: 64px;
+    z-index: 35;
+    padding: 8px 10px;
+  }
+
+  .nav-pill {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+
+  .dashboard-wrap {
+    padding: 12px;
+  }
+
+  .page-title {
+    font-size: 26px;
+  }
+
+  .page-note {
+    font-size: 14px;
+  }
+
+  .page-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .page-actions .btn,
+  .page-actions .select {
+    width: 100%;
   }
 
   .kpi-grid,
@@ -540,6 +602,20 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .kpi-card {
+    padding: 13px;
+  }
+
+  .kpi-value {
+    font-size: 32px;
+  }
+
+  .table th,
+  .table td {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
   .page-head {
     flex-direction: column;
     align-items: stretch;
@@ -551,5 +627,20 @@ select {
 
   .segmented-btn {
     flex: 1;
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .auth-wrap {
+    padding: 14px;
+  }
+
+  .auth-card {
+    padding: 22px;
+    border-radius: 14px;
+  }
+
+  .auth-title {
+    font-size: 28px;
   }
 }

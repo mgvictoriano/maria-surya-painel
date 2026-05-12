@@ -164,7 +164,7 @@ export default function Dashboard({ usuario, onLogout }) {
           <p className="page-note">Calculado automaticamente com base nas transacoes registradas.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-actions">
           <select className="select" value={mesAtual} onChange={(e) => setMesAtual(Number(e.target.value))}>
             {meses.map((m) => (
               <option key={m.valor} value={m.valor}>{m.label}</option>
