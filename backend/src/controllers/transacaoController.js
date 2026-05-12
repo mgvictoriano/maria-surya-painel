@@ -224,6 +224,56 @@ export async function obterDashboard(req, res) {
   }
 }
 
+export async function atualizarTransacao(req, res) {
+  try {
+    const { id } = req.params;
+    const socoId = req.socoId;
+    const { categoria, descricao, valor } = req.body;
+
+    const transacao = await getAsync(
+      'SELECT valor, tipo FROM transacoes WHERE id = ? AND soco_id = ?',
+      [id, socoId]
+    );
+
+    if (!transacao) {
+      return res.status(404).json({ erro: 'Transação não encontrada' });
+    }
+
+    const campos = [];
+    const params = [];
+
+    if (categoria !== undefined) { campos.push('categoria = ?'); params.push(categoria); }
+    if (descricao !== undefined) { campos.push('descricao = ?'); params.push(descricao); }
+    if (valor !== undefined)    { campos.push('valor = ?');    params.push(Number(valor)); }
+
+    if (campos.length === 0) {
+      return res.status(400).json({ erro: 'Nada para atualizar' });
+    }
+
+    params.push(id);
+    await runAsync(`UPDATE transacoes SET ${campos.join(', ')} WHERE id = ?`, params);
+
+    // Ajustar saldo apenas se o valor mudou
+    if (valor !== undefined && Number(valor) !== Number(transacao.valor)) {
+      const diff = Math.abs(Number(valor) - Number(transacao.valor));
+      const cresceu = Number(valor) > Number(transacao.valor);
+      // Para despesa: cresceu = mais gasto = saldo diminui; encolheu = saldo cresce
+      const op = transacao.tipo === 'receita'
+        ? (cresceu ? '+' : '-')
+        : (cresceu ? '-' : '+');
+      await runAsync(
+        `UPDATE saldos SET saldo_atual = saldo_atual ${op} ? WHERE id = 1`,
+        [diff]
+      );
+    }
+
+    res.json({ sucesso: true, mensagem: 'Transação atualizada' });
+  } catch (erro) {
+    console.error('Erro ao atualizar transação:', erro);
+    res.status(500).json({ erro: 'Erro ao atualizar transação' });
+  }
+}
+
 export async function deletarTransacao(req, res) {
   try {
     const { id } = req.params;

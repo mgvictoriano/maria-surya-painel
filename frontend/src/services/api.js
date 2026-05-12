@@ -83,5 +83,6 @@ export const transacaoService = {
     }
     return api.get(url);
   },
+  atualizar: (id, dados) => api.put(`/transacoes/${id}`, dados),
   deletar: (id) => api.delete(`/transacoes/${id}`)
 };
