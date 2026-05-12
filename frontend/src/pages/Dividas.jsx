@@ -106,7 +106,7 @@ export default function Dividas() {
         </section>
       )}
 
-      <section className="table-wrap">
+      <section className="table-wrap desktop-table">
         <table className="table">
           <thead>
             <tr>
@@ -143,6 +143,39 @@ export default function Dividas() {
             })}
           </tbody>
         </table>
+      </section>
+
+      <section className="mobile-cards">
+        {carregando && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Carregando...</p>
+          </article>
+        )}
+        {!carregando && itens.length === 0 && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Sem dívidas no período.</p>
+          </article>
+        )}
+        {!carregando && itens.map((item) => {
+          const valor = Number(item.valor || 0);
+          return (
+            <article className="mobile-card" key={`mobile-${item.id}`}>
+              <div className="mobile-card-head">
+                <p className="mobile-card-title">{item.descricao}</p>
+                <span className="pill pill-warn">Em andamento</span>
+              </div>
+              <div className="mobile-row"><span className="mobile-key">Credor</span><span className="mobile-value">{item.categoria.replace('Dívida - ', '')}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Original</span><span className="mobile-value">{formatCurrency(valor)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Pago</span><span className="mobile-value kpi-positive">{formatCurrency(0)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Saldo</span><span className="mobile-value kpi-negative">{formatCurrency(valor)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Últ. Pgto.</span><span className="mobile-value">{formatDate(item.data_transacao)}</span></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginTop: 10 }}>
+                <button className="btn btn-secondary" type="button" onClick={() => alert('Tela de histórico será conectada na próxima etapa.')}>Histórico</button>
+                <button className="btn btn-danger-soft" type="button" onClick={() => excluir(item.id)}>×</button>
+              </div>
+            </article>
+          );
+        })}
       </section>
 
       <section className="panel" style={{ marginTop: 12 }}>

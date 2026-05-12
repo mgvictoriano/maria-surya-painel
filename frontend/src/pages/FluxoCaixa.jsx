@@ -96,7 +96,7 @@ export default function FluxoCaixa() {
       {carregando ? (
         <section className="panel"><p>Carregando fluxo...</p></section>
       ) : (
-        <section className="table-wrap">
+        <section className="table-wrap desktop-table">
           <table className="table">
             <thead>
               <tr>
@@ -131,6 +131,28 @@ export default function FluxoCaixa() {
               ))}
             </tbody>
           </table>
+        </section>
+      )}
+
+      {!carregando && (
+        <section className="mobile-cards">
+          {linhas.map((linha) => (
+            <article className="mobile-card" key={`mobile-${linha.mes}`}>
+              <div className="mobile-card-head">
+                <p className="mobile-card-title">{MESES[linha.mes - 1]}/{String(anoAtual).slice(-2)}</p>
+                <span className={`pill ${linha.resultado >= 0 ? 'pill-success' : 'pill-danger'}`}>{linha.resultado >= 0 ? 'Lucro' : 'Prejuízo'}</span>
+              </div>
+              <div className="mobile-row"><span className="mobile-key">Saldo Inicial</span><span className="mobile-value">{formatCurrency(linha.saldoInicial)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Entradas</span><span className="mobile-value kpi-positive">{formatCurrency(linha.entradas)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Fixas</span><span className="mobile-value">{formatCurrency(linha.fixas)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Variáveis</span><span className="mobile-value">{formatCurrency(linha.variaveis)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Dívidas</span><span className="mobile-value">{formatCurrency(linha.dividas)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Retiradas</span><span className="mobile-value">{formatCurrency(linha.retiradas)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Total Saídas</span><span className="mobile-value kpi-negative">{formatCurrency(linha.totalSaidas)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Resultado</span><span className={`mobile-value ${linha.resultado >= 0 ? 'kpi-positive' : 'kpi-negative'}`}>{formatCurrency(linha.resultado)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Saldo Final</span><span className={`mobile-value ${linha.saldoFinal >= 0 ? 'kpi-positive' : 'kpi-negative'}`}>{formatCurrency(linha.saldoFinal)}</span></div>
+            </article>
+          ))}
         </section>
       )}
     </div>

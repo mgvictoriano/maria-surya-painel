@@ -106,7 +106,7 @@ export default function Entradas({ usuario }) {
         </section>
       )}
 
-      <section className="table-wrap">
+      <section className="table-wrap desktop-table">
         <table className="table">
           <thead>
             <tr>
@@ -151,6 +151,33 @@ export default function Entradas({ usuario }) {
             )}
           </tbody>
         </table>
+      </section>
+
+      <section className="mobile-cards">
+        {itens.length === 0 && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Sem entradas neste período.</p>
+          </article>
+        )}
+
+        {itens.map((item) => {
+          const clientes = parseClientes(item.descricao, item.valor);
+          const ticket = clientes > 0 ? Number(item.valor || 0) / clientes : 0;
+          return (
+            <article className="mobile-card" key={`mobile-${item.id}`}>
+              <div className="mobile-card-head">
+                <p className="mobile-card-title">{cleanDescricao(item.descricao)}</p>
+                <span className="pill">{item.categoria}</span>
+              </div>
+              <div className="mobile-row"><span className="mobile-key">Data</span><span className="mobile-value">{formatDate(item.data_transacao)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Clientes</span><span className="mobile-value" style={{ color: '#1f4db6' }}>{clientes}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Líquido</span><span className="mobile-value kpi-positive">{formatCurrency(Number(item.valor || 0))}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Ticket</span><span className="mobile-value kpi-warn">{formatCurrency(ticket)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Registrado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
+              <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button" style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+            </article>
+          );
+        })}
       </section>
     </div>
   );
