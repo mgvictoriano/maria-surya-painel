@@ -225,7 +225,7 @@ input {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
   margin: 14px 0 12px;
 }
@@ -256,10 +256,13 @@ input {
 
 .kpi-value {
   margin: 6px 0;
-  font-size: 40px;
+  font-size: 32px;
   line-height: 1;
   font-weight: 800;
   color: #1b3a2a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-foot {
@@ -555,7 +558,7 @@ input {
 
 @media (max-width: 1080px) {
   .kpi-grid {
-    grid-template-columns: repeat(2, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 
   .panel-grid {

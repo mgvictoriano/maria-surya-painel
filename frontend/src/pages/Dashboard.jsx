@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import Modal from '../components/Modal';
 import Entradas from './Entradas';
 import DespesasFixas from './DespesasFixas';
 import DespesasVariaveis from './DespesasVariaveis';
@@ -175,8 +176,8 @@ export default function Dashboard({ usuario, onLogout }) {
               <option key={ano} value={ano}>{ano}</option>
             ))}
           </select>
-          <button className="btn btn-brand" onClick={() => setShowForm((s) => !s)} type="button">
-            {showForm ? 'Fechar' : '+ Nova Transacao'}
+          <button className="btn btn-brand" onClick={() => setShowForm(true)} type="button">
+            + Nova Transação
           </button>
         </div>
       </section>
@@ -209,22 +210,19 @@ export default function Dashboard({ usuario, onLogout }) {
         </article>
       </section>
 
-      {showForm && (
-        <section className="panel" style={{ marginTop: 10 }}>
-          <h3>Nova Transacao</h3>
-          <form onSubmit={handleSubmit} className="txn-form">
-            <select className="input" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
-              <option value="receita">Receita</option>
-              <option value="despesa">Despesa</option>
-            </select>
-            <input className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="Categoria" required />
-            <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descricao" required />
-            <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
-            <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
-            <button className="btn btn-brand" type="submit">Salvar</button>
-          </form>
-        </section>
-      )}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Nova Transação">
+        <form onSubmit={handleSubmit} className="txn-form">
+          <select className="input" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+            <option value="receita">Receita</option>
+            <option value="despesa">Despesa</option>
+          </select>
+          <input className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="Categoria" required />
+          <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descrição" required />
+          <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
+          <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar</button>
+        </form>
+      </Modal>
 
       <section className="panel-grid">
         <article className="panel">
@@ -267,33 +265,6 @@ export default function Dashboard({ usuario, onLogout }) {
             </ResponsiveContainer>
           </div>
         </article>
-      </section>
-
-      <section className="actions">
-        <div className="mini">
-          <strong>Transacoes no periodo</strong>
-          <div>{resumo.transacoes || 0}</div>
-        </div>
-        <div className="mini">
-          <strong>Maior entrada</strong>
-          <div>{formatCurrency(Math.max(0, ...transacoes.filter((t) => t.tipo === 'receita').map((t) => Number(t.valor))))}</div>
-        </div>
-        <div className="mini">
-          <strong>Maior saida</strong>
-          <div>{formatCurrency(Math.max(0, ...transacoes.filter((t) => t.tipo === 'despesa').map((t) => Number(t.valor))))}</div>
-        </div>
-        <div className="mini">
-          <strong>Status caixa</strong>
-          <div className={valorClasse(resumo.resultado || 0)}>{(resumo.resultado || 0) >= 0 ? 'Saudavel' : 'Atencao'}</div>
-        </div>
-        <div className="mini">
-          <strong>Modulo ativo</strong>
-          <div>{moduloAtivo}</div>
-        </div>
-        <div className="mini">
-          <strong>Usuario</strong>
-          <div>{usuario?.nome || 'Socio'}</div>
-        </div>
       </section>
 
       <section className="table-wrap">
