@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import Modal from '../components/Modal';
+import CurrencyInput from '../components/CurrencyInput';
 
 function parseClientes(descricao, valor) {
   const match = String(descricao || '').match(/\[cli:(\d+)\]/i);
@@ -125,6 +126,7 @@ export default function Entradas({ usuario }) {
           <input className="input" placeholder="Descrição" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
           <input className="input" type="number" min="0" placeholder="Cli./Qtd." value={form.clientes} onChange={(e) => setForm({ ...form, clientes: e.target.value })} />
           <input className="input" type="number" min="0" step="0.01" placeholder="Líquido" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
+                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} placeholder="R$ 0,00" required />
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
@@ -141,6 +143,7 @@ export default function Entradas({ usuario }) {
           <input className="input" placeholder="Descrição" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} required />
           <input className="input" type="number" min="0" placeholder="Cli./Qtd." value={formEditar.clientes} onChange={(e) => setFormEditar({ ...formEditar, clientes: e.target.value })} />
           <input className="input" type="number" min="0" step="0.01" placeholder="Líquido" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} required />
+                    <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} placeholder="R$ 0,00" required />
           <button className="btn btn-brand" type="submit">Salvar Alterações</button>
         </form>
       </Modal>

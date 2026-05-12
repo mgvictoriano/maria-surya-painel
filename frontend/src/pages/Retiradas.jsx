@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import Modal from '../components/Modal';
+import CurrencyInput from '../components/CurrencyInput';
 
 function isRetirada(item) {
   if (item.tipo !== 'despesa') return false;
@@ -117,6 +118,8 @@ export default function Retiradas({ usuario }) {
           </select>
           <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Motivo" required />
           <input className="input" type="number" step="0.01" min="0" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
+                    <CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} required />
+                    <CurrencyInput value={formEditar.valor} onChange={(v) => setFormEditar({ ...formEditar, valor: v })} required />
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
         </form>
