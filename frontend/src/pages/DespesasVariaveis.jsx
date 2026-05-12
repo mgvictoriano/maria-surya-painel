@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import Modal from '../components/Modal';
 
 const FIXAS = ['aluguel', 'salario', 'salários', 'energia', 'agua', 'água', 'internet', 'telefone', 'contabilidade', 'marketing'];
 
@@ -113,18 +114,15 @@ export default function DespesasVariaveis({ usuario }) {
         </article>
       </section>
 
-      {showForm && (
-        <section className="panel" style={{ marginBottom: 12 }}>
-          <h3>Novo Lançamento Variável</h3>
-          <form className="txn-form" onSubmit={salvar}>
-            <input className="input" placeholder="Categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} required />
-            <input className="input" placeholder="Fornecedor" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
-            <input className="input" type="number" step="0.01" min="0" placeholder="Valor" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
-            <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
-            <button className="btn btn-brand" type="submit">Salvar</button>
-          </form>
-        </section>
-      )}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Novo Lançamento Variável">
+        <form className="txn-form" onSubmit={salvar}>
+          <input className="input" placeholder="Categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} required />
+          <input className="input" placeholder="Fornecedor" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
+          <input className="input" type="number" step="0.01" min="0" placeholder="Valor" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
+          <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar</button>
+        </form>
+      </Modal>
 
       <section className="split-grid">
         <article className="table-wrap desktop-table">

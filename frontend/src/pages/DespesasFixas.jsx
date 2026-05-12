@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { transacaoService } from '../services/api';
 import { formatCurrency } from '../utils/formatters';
+import Modal from '../components/Modal';
 
 const CATEGORIAS_FIXAS = ['Aluguel', 'Salários', 'Energia', 'Água', 'Internet', 'Contabilidade', 'Marketing'];
 
@@ -92,24 +93,21 @@ export default function DespesasFixas({ usuario }) {
         <article className="kpi-card"><p className="kpi-label">Atrasado</p><p className="kpi-value kpi-negative">{formatCurrency(0)}</p></article>
       </section>
 
-      {showForm && (
-        <section className="panel" style={{ marginBottom: 12 }}>
-          <h3>Nova Conta Fixa</h3>
-          <form className="txn-form" onSubmit={salvar}>
-            <select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
-              {CATEGORIAS_FIXAS.map((categoria) => <option key={categoria}>{categoria}</option>)}
-            </select>
-            <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descrição" />
-            <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
-            <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option>Pago</option>
-              <option>A pagar</option>
-            </select>
-            <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
-            <button className="btn btn-brand" type="submit">Salvar</button>
-          </form>
-        </section>
-      )}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Nova Conta Fixa">
+        <form className="txn-form" onSubmit={salvar}>
+          <select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
+            {CATEGORIAS_FIXAS.map((categoria) => <option key={categoria}>{categoria}</option>)}
+          </select>
+          <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descrição" />
+          <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
+          <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+            <option>Pago</option>
+            <option>A pagar</option>
+          </select>
+          <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar</button>
+        </form>
+      </Modal>
 
       <section className="table-wrap desktop-table">
         <table className="table">

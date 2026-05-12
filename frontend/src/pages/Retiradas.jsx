@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import Modal from '../components/Modal';
 
 function isRetirada(item) {
   if (item.tipo !== 'despesa') return false;
@@ -83,22 +84,19 @@ export default function Retiradas({ usuario }) {
         </article>
       </section>
 
-      {showForm && (
-        <section className="panel" style={{ marginBottom: 12 }}>
-          <h3>Nova Retirada</h3>
-          <form className="txn-form" onSubmit={salvar}>
-            <select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
-              <option>Retirada de sócio</option>
-              <option>Adiantamento</option>
-              <option>Pro-labore</option>
-            </select>
-            <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Motivo" required />
-            <input className="input" type="number" step="0.01" min="0" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
-            <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
-            <button className="btn btn-brand" type="submit">Salvar</button>
-          </form>
-        </section>
-      )}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Nova Retirada">
+        <form className="txn-form" onSubmit={salvar}>
+          <select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
+            <option>Retirada de sócio</option>
+            <option>Adiantamento</option>
+            <option>Pro-labore</option>
+          </select>
+          <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Motivo" required />
+          <input className="input" type="number" step="0.01" min="0" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
+          <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar</button>
+        </form>
+      </Modal>
 
       <section className="table-wrap desktop-table">
         <table className="table">

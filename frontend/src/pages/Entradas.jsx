@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import Modal from '../components/Modal';
 
 function parseClientes(descricao, valor) {
   const match = String(descricao || '').match(/\[cli:(\d+)\]/i);
@@ -87,24 +88,21 @@ export default function Entradas({ usuario }) {
         <article className="kpi-card"><p className="kpi-label">Lançamentos</p><p className="kpi-value">{itens.length}</p></article>
       </section>
 
-      {showForm && (
-        <section className="panel" style={{ marginBottom: 12 }}>
-          <h3>Nova Entrada</h3>
-          <form className="txn-form" onSubmit={salvar}>
-            <select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
-              <option>Salão</option>
-              <option>Rodízio</option>
-              <option>Buffet</option>
-              <option>Delivery</option>
-            </select>
-            <input className="input" placeholder="Descrição" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
-            <input className="input" type="number" min="0" placeholder="Cli./Qtd." value={form.clientes} onChange={(e) => setForm({ ...form, clientes: e.target.value })} />
-            <input className="input" type="number" min="0" step="0.01" placeholder="Líquido" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
-            <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
-            <button className="btn btn-brand" type="submit">Salvar</button>
-          </form>
-        </section>
-      )}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Nova Entrada">
+        <form className="txn-form" onSubmit={salvar}>
+          <select className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
+            <option>Salão</option>
+            <option>Rodízio</option>
+            <option>Buffet</option>
+            <option>Delivery</option>
+          </select>
+          <input className="input" placeholder="Descrição" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} required />
+          <input className="input" type="number" min="0" placeholder="Cli./Qtd." value={form.clientes} onChange={(e) => setForm({ ...form, clientes: e.target.value })} />
+          <input className="input" type="number" min="0" step="0.01" placeholder="Líquido" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required />
+          <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar</button>
+        </form>
+      </Modal>
 
       <section className="table-wrap desktop-table">
         <table className="table">
