@@ -127,7 +127,7 @@ export default function DespesasVariaveis({ usuario }) {
       )}
 
       <section className="split-grid">
-        <article className="table-wrap">
+        <article className="table-wrap desktop-table">
           <table className="table">
             <thead>
               <tr>
@@ -184,6 +184,31 @@ export default function DespesasVariaveis({ usuario }) {
             </div>
           ))}
         </article>
+      </section>
+
+      <section className="mobile-cards">
+        {carregando && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Carregando...</p>
+          </article>
+        )}
+        {!carregando && itens.length === 0 && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Sem despesas variáveis no período.</p>
+          </article>
+        )}
+        {!carregando && itens.map((item) => (
+          <article className="mobile-card" key={`mobile-${item.id}`}>
+            <div className="mobile-card-head">
+              <p className="mobile-card-title">{item.descricao}</p>
+              <span className="pill pill-warn">{item.categoria}</span>
+            </div>
+            <div className="mobile-row"><span className="mobile-key">Data</span><span className="mobile-value">{formatDate(item.data_transacao)}</span></div>
+            <div className="mobile-row"><span className="mobile-key">Valor</span><span className="mobile-value kpi-negative">{formatCurrency(Number(item.valor || 0))}</span></div>
+            <div className="mobile-row"><span className="mobile-key">Registrado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
+            <button className="btn btn-danger-soft" type="button" onClick={() => excluir(item.id)} style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+          </article>
+        ))}
       </section>
     </div>
   );

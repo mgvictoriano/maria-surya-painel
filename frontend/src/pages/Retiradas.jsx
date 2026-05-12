@@ -100,7 +100,7 @@ export default function Retiradas({ usuario }) {
         </section>
       )}
 
-      <section className="table-wrap">
+      <section className="table-wrap desktop-table">
         <table className="table">
           <thead>
             <tr>
@@ -139,6 +139,28 @@ export default function Retiradas({ usuario }) {
             )}
           </tbody>
         </table>
+      </section>
+
+      <section className="mobile-cards">
+        {itens.length === 0 && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Sem retiradas neste período.</p>
+          </article>
+        )}
+
+        {itens.map((item) => (
+          <article className="mobile-card" key={`mobile-${item.id}`}>
+            <div className="mobile-card-head">
+              <p className="mobile-card-title">{item.descricao}</p>
+              <span className="pill pill-purple">{item.categoria}</span>
+            </div>
+            <div className="mobile-row"><span className="mobile-key">Data</span><span className="mobile-value">{formatDate(item.data_transacao)}</span></div>
+            <div className="mobile-row"><span className="mobile-key">Responsável</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
+            <div className="mobile-row"><span className="mobile-key">Valor</span><span className="mobile-value kpi-negative">{formatCurrency(Number(item.valor || 0))}</span></div>
+            <div className="mobile-row"><span className="mobile-key">Autorizado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
+            <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button" style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+          </article>
+        ))}
       </section>
     </div>
   );

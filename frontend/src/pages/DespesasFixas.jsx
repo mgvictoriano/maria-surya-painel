@@ -111,7 +111,7 @@ export default function DespesasFixas({ usuario }) {
         </section>
       )}
 
-      <section className="table-wrap">
+      <section className="table-wrap desktop-table">
         <table className="table">
           <thead>
             <tr>
@@ -143,6 +143,32 @@ export default function DespesasFixas({ usuario }) {
             })}
           </tbody>
         </table>
+      </section>
+
+      <section className="mobile-cards">
+        {itens.length === 0 && (
+          <article className="mobile-card">
+            <p className="mobile-card-title">Sem despesas fixas no período.</p>
+          </article>
+        )}
+
+        {itens.map((item) => {
+          const valor = Number(item.valor || 0);
+          const pago = hasTag(item.descricao, '[status:pago]') ? valor : 0;
+          return (
+            <article className="mobile-card" key={`mobile-${item.id}`}>
+              <div className="mobile-card-head">
+                <p className="mobile-card-title">{cleanDescricao(item.descricao) || item.categoria}</p>
+                <span className={`pill ${pago > 0 ? 'pill-success' : 'pill-warn'}`}>{pago > 0 ? 'Pago' : 'A pagar'}</span>
+              </div>
+              <div className="mobile-row"><span className="mobile-key">Categoria</span><span className="mobile-value">{item.categoria}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Previsto</span><span className="mobile-value">{formatCurrency(valor)}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Pago</span><span className="mobile-value kpi-positive">{pago > 0 ? formatCurrency(pago) : '—'}</span></div>
+              <div className="mobile-row"><span className="mobile-key">Registrado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
+              <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button" style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+            </article>
+          );
+        })}
       </section>
     </div>
   );
