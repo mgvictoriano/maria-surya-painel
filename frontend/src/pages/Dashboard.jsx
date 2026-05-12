@@ -1,28 +1,86 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 import { transacaoService } from '../services/api';
-import { C } from '../constants/paleta';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
-export default function Dashboard({ usuario }) {
+const MODULOS = [
+  'Dashboard',
+  'Entradas',
+  'Desp. Fixas',
+  'Desp. Variaveis',
+  'Dividas',
+  'Retiradas',
+  'Fluxo de Caixa',
+  'Relatorio'
+];
+
+const CORES_GRAFICO = ['#1f5d43', '#cc8c21', '#b83c2e', '#3e7a65', '#6f4f2b', '#8a7160'];
+
+function valorClasse(valor) {
+  if (valor > 0) return 'kpi-positive';
+  if (valor < 0) return 'kpi-negative';
+  return '';
+}
+
+function mesLabel(periodo) {
+  const [ano, mes] = periodo.split('-').map(Number);
+  return new Date(ano, mes - 1).toLocaleDateString('pt-BR', {
+    month: 'short',
+    year: '2-digit'
+  });
+}
+
+export default function Dashboard({ usuario, onLogout }) {
+  const hoje = new Date();
+  const [moduloAtivo, setModuloAtivo] = useState('Dashboard');
+  const [mesAtual, setMesAtual] = useState(hoje.getMonth() + 1);
+  const [anoAtual, setAnoAtual] = useState(hoje.getFullYear());
+  const [carregando, setCarregando] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const [transacoes, setTransacoes] = useState([]);
+  const [serieMensal, setSerieMensal] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [resumo, setResumo] = useState({
     receitas: 0,
     despesas: 0,
-    liquido: 0,
-    saldoGeral: 0
+    resultado: 0,
+    saldoAcumulado: 0,
+    transacoes: 0,
+    variacaoResultado: 0
   });
-  const [carregando, setCarregando] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [mesAtual, setMesAtual] = useState(new Date().getMonth() + 1);
-  const [anoAtual, setAnoAtual] = useState(new Date().getFullYear());
 
   const [form, setForm] = useState({
     tipo: 'despesa',
-    categoria: 'Alimentação',
+    categoria: 'Operacional',
     descricao: '',
     valor: '',
     dataTrasacao: new Date().toISOString().split('T')[0]
   });
+
+  const meses = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => ({
+      valor: i + 1,
+      label: new Date(2026, i, 1).toLocaleDateString('pt-BR', { month: 'long' })
+    })),
+    []
+  );
+
+  const anos = useMemo(() => {
+    const anoBase = new Date().getFullYear();
+    return [anoBase - 2, anoBase - 1, anoBase, anoBase + 1];
+  }, []);
 
   useEffect(() => {
     carregarDados();
@@ -31,14 +89,17 @@ export default function Dashboard({ usuario }) {
   async function carregarDados() {
     try {
       setCarregando(true);
-      const [transRes, resumoRes] = await Promise.all([
+      const [lista, dashboard] = await Promise.all([
         transacaoService.listar(mesAtual, anoAtual),
-        transacaoService.resumo(mesAtual, anoAtual)
+        transacaoService.dashboard(mesAtual, anoAtual)
       ]);
-      setTransacoes(transRes.transacoes || []);
-      setResumo(resumoRes);
+
+      setTransacoes(lista.transacoes || []);
+      setResumo(dashboard.kpis || {});
+      setSerieMensal(dashboard.series?.mensal || []);
+      setCategorias(dashboard.categorias || []);
     } catch (erro) {
-      alert('Erro ao carregar dados: ' + erro.message);
+      alert('Erro ao carregar dashboard: ' + erro.message);
     } finally {
       setCarregando(false);
     }
@@ -51,12 +112,12 @@ export default function Dashboard({ usuario }) {
         form.tipo,
         form.categoria,
         form.descricao,
-        parseFloat(form.valor),
+        Number(form.valor),
         form.dataTrasacao
       );
       setForm({
         tipo: 'despesa',
-        categoria: 'Alimentação',
+        categoria: 'Operacional',
         descricao: '',
         valor: '',
         dataTrasacao: new Date().toISOString().split('T')[0]
@@ -64,12 +125,12 @@ export default function Dashboard({ usuario }) {
       setShowForm(false);
       carregarDados();
     } catch (erro) {
-      alert('Erro ao criar transação: ' + erro.message);
+      alert('Erro ao criar transacao: ' + erro.message);
     }
   }
 
   async function deletarTransacao(id) {
-    if (!window.confirm('Deseja deletar esta transação?')) return;
+    if (!window.confirm('Deseja excluir esta transacao?')) return;
     try {
       await transacaoService.deletar(id);
       carregarDados();
@@ -79,340 +140,218 @@ export default function Dashboard({ usuario }) {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.content}>
-        {/* Cards de resumo */}
-        <div style={styles.grid}>
-          <div style={{ ...styles.card, borderTop: `4px solid ${C.accent}` }}>
-            <p style={styles.cardLabel}>Receitas</p>
-            <p style={{ ...styles.cardValue, color: '#22c55e' }}>
-              {formatCurrency(resumo.receitas)}
-            </p>
-          </div>
-          <div style={{ ...styles.card, borderTop: `4px solid ${C.danger}` }}>
-            <p style={styles.cardLabel}>Despesas</p>
-            <p style={{ ...styles.cardValue, color: '#ef4444' }}>
-              {formatCurrency(resumo.despesas)}
-            </p>
-          </div>
-          <div style={{ ...styles.card, borderTop: `4px solid #3b82f6` }}>
-            <p style={styles.cardLabel}>Líquido</p>
-            <p style={{ ...styles.cardValue, color: '#3b82f6' }}>
-              {formatCurrency(resumo.liquido)}
-            </p>
-          </div>
-          <div style={{ ...styles.card, borderTop: `4px solid #8b5cf6` }}>
-            <p style={styles.cardLabel}>Saldo Geral</p>
-            <p style={{ ...styles.cardValue, color: '#8b5cf6' }}>
-              {formatCurrency(resumo.saldoGeral)}
-            </p>
+    <div className="dashboard-wrap">
+      <header className="topbar">
+        <div className="brand-block">
+          <span className="brand-icon">MS</span>
+          <div>
+            <h1 className="brand-title">Painel Financeiro</h1>
+            <p className="brand-subtitle">Maria Surya Restaurante Arabe</p>
           </div>
         </div>
-
-        {/* Filtros e botão de nova transação */}
-        <div style={styles.toolbar}>
-          <div style={styles.filters}>
-            <select
-              value={mesAtual}
-              onChange={(e) => setMesAtual(parseInt(e.target.value))}
-              style={styles.select}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
-                <option key={m} value={m}>
-                  {new Date(2024, m - 1).toLocaleString('pt-BR', { month: 'long' })}
-                </option>
-              ))}
-            </select>
-            <select
-              value={anoAtual}
-              onChange={(e) => setAnoAtual(parseInt(e.target.value))}
-              style={styles.select}
-            >
-              {[2024, 2025, 2026].map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            style={{
-              ...styles.primaryBtn,
-              backgroundColor: showForm ? C.muted : C.accent
-            }}
-          >
-            {showForm ? '✕ Cancelar' : '+ Nova Transação'}
+        <div>
+          <strong>{usuario?.nome || 'Socio'}</strong>
+          <button className="btn" style={{ marginLeft: 12, background: 'rgba(255,255,255,.2)', color: '#fff' }} onClick={onLogout}>
+            Sair
           </button>
         </div>
+      </header>
 
-        {/* Formulário de nova transação */}
-        {showForm && (
-          <form onSubmit={handleSubmit} style={styles.formContainer}>
-            <h3 style={styles.formTitle}>Nova Transação</h3>
-            <div style={styles.formGrid}>
-              <select
-                value={form.tipo}
-                onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                style={styles.formInput}
-              >
-                <option value="receita">Receita</option>
-                <option value="despesa">Despesa</option>
-              </select>
+      <nav className="nav-strip">
+        {MODULOS.map((modulo) => (
+          <button
+            key={modulo}
+            className={`nav-pill ${modulo === moduloAtivo ? 'active' : ''}`}
+            onClick={() => setModuloAtivo(modulo)}
+            type="button"
+          >
+            {modulo}
+          </button>
+        ))}
+      </nav>
 
-              <input
-                type="text"
-                placeholder="Categoria"
-                value={form.categoria}
-                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                style={styles.formInput}
-              />
-
-              <input
-                type="text"
-                placeholder="Descrição"
-                value={form.descricao}
-                onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-                style={styles.formInput}
-                required
-              />
-
-              <input
-                type="number"
-                placeholder="Valor"
-                value={form.valor}
-                onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                style={styles.formInput}
-                step="0.01"
-                required
-              />
-
-              <input
-                type="date"
-                value={form.dataTrasacao}
-                onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })}
-                style={styles.formInput}
-              />
-
-              <button type="submit" style={styles.primaryBtn}>
-                Salvar
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Lista de transações */}
-        <div style={styles.listContainer}>
-          <h3 style={styles.listTitle}>
-            Transações de {new Date(2024, mesAtual - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
-          </h3>
-          {carregando ? (
-            <p style={styles.loading}>Carregando...</p>
-          ) : transacoes.length === 0 ? (
-            <p style={styles.empty}>Nenhuma transação neste período</p>
-          ) : (
-            <div style={styles.tableContainer}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.headerRow}>
-                    <th style={styles.th}>Data</th>
-                    <th style={styles.th}>Tipo</th>
-                    <th style={styles.th}>Categoria</th>
-                    <th style={styles.th}>Descrição</th>
-                    <th style={styles.th}>Valor</th>
-                    <th style={styles.th}>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transacoes.map((t) => (
-                    <tr key={t.id} style={styles.row}>
-                      <td style={styles.td}>{formatDate(t.data_transacao)}</td>
-                      <td style={styles.td}>
-                        <span style={{
-                          ...styles.badge,
-                          backgroundColor: t.tipo === 'receita' ? '#dcfce7' : '#fee2e2',
-                          color: t.tipo === 'receita' ? '#22c55e' : '#ef4444'
-                        }}>
-                          {t.tipo === 'receita' ? '↓ Receita' : '↑ Despesa'}
-                        </span>
-                      </td>
-                      <td style={styles.td}>{t.categoria}</td>
-                      <td style={styles.td}>{t.descricao}</td>
-                      <td style={{
-                        ...styles.td,
-                        color: t.tipo === 'receita' ? '#22c55e' : '#ef4444',
-                        fontWeight: '600'
-                      }}>
-                        {t.tipo === 'receita' ? '+' : '-'} {formatCurrency(t.valor)}
-                      </td>
-                      <td style={styles.td}>
-                        <button
-                          onClick={() => deletarTransacao(t.id)}
-                          style={styles.deleteBtn}
-                        >
-                          🗑
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <section className="page-head">
+        <div>
+          <h2 className="page-title">Dashboard Financeiro</h2>
+          <p className="page-note">Calculado automaticamente com base nas transacoes registradas.</p>
         </div>
-      </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select className="select" value={mesAtual} onChange={(e) => setMesAtual(Number(e.target.value))}>
+            {meses.map((m) => (
+              <option key={m.valor} value={m.valor}>{m.label}</option>
+            ))}
+          </select>
+          <select className="select" value={anoAtual} onChange={(e) => setAnoAtual(Number(e.target.value))}>
+            {anos.map((ano) => (
+              <option key={ano} value={ano}>{ano}</option>
+            ))}
+          </select>
+          <button className="btn btn-brand" onClick={() => setShowForm((s) => !s)} type="button">
+            {showForm ? 'Fechar' : '+ Nova Transacao'}
+          </button>
+        </div>
+      </section>
+
+      <section className="kpi-grid">
+        <article className="kpi-card">
+          <p className="kpi-label">Receita Total</p>
+          <p className="kpi-value kpi-positive">{formatCurrency(resumo.receitas || 0)}</p>
+          <p className="kpi-foot">Entradas no periodo selecionado</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">Total de Saidas</p>
+          <p className="kpi-value kpi-negative">{formatCurrency(resumo.despesas || 0)}</p>
+          <p className="kpi-foot">Despesas no periodo selecionado</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">Resultado do Mes</p>
+          <p className={`kpi-value ${valorClasse(resumo.resultado || 0)}`}>{formatCurrency(resumo.resultado || 0)}</p>
+          <p className="kpi-foot">Receitas - despesas</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">Saldo Acumulado</p>
+          <p className={`kpi-value ${valorClasse(resumo.saldoAcumulado || 0)}`}>{formatCurrency(resumo.saldoAcumulado || 0)}</p>
+          <p className="kpi-foot">Saldo geral da operacao</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">Variacao do Resultado</p>
+          <p className={`kpi-value ${valorClasse(resumo.variacaoResultado || 0)}`}>{Number(resumo.variacaoResultado || 0).toFixed(1)}%</p>
+          <p className="kpi-foot">Comparado ao mes anterior</p>
+        </article>
+      </section>
+
+      {showForm && (
+        <section className="panel" style={{ marginTop: 10 }}>
+          <h3>Nova Transacao</h3>
+          <form onSubmit={handleSubmit} className="txn-form">
+            <select className="input" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+            <input className="input" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="Categoria" required />
+            <input className="input" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Descricao" required />
+            <input className="input" type="number" min="0" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="Valor" required />
+            <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
+            <button className="btn btn-brand" type="submit">Salvar</button>
+          </form>
+        </section>
+      )}
+
+      <section className="panel-grid">
+        <article className="panel">
+          <h3>Entradas x Saidas por Mes</h3>
+          <div style={{ width: '100%', height: 310 }}>
+            <ResponsiveContainer>
+              <BarChart data={serieMensal.map((item) => ({ ...item, label: mesLabel(item.periodo) }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ebe4d9" />
+                <XAxis dataKey="label" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Legend />
+                <Bar dataKey="receitas" fill="#1f5d43" name="Receitas" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="despesas" fill="#b83c2e" name="Despesas" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="panel">
+          <h3>Distribuicao por Categoria (mes atual)</h3>
+          <div style={{ width: '100%', height: 310 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={categorias}
+                  dataKey="total"
+                  nameKey="categoria"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={95}
+                  label={(item) => `${item.categoria}: ${formatCurrency(item.total)}`}
+                >
+                  {categorias.map((item, idx) => (
+                    <Cell key={`${item.categoria}-${idx}`} fill={CORES_GRAFICO[idx % CORES_GRAFICO.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+      </section>
+
+      <section className="actions">
+        <div className="mini">
+          <strong>Transacoes no periodo</strong>
+          <div>{resumo.transacoes || 0}</div>
+        </div>
+        <div className="mini">
+          <strong>Maior entrada</strong>
+          <div>{formatCurrency(Math.max(0, ...transacoes.filter((t) => t.tipo === 'receita').map((t) => Number(t.valor))))}</div>
+        </div>
+        <div className="mini">
+          <strong>Maior saida</strong>
+          <div>{formatCurrency(Math.max(0, ...transacoes.filter((t) => t.tipo === 'despesa').map((t) => Number(t.valor))))}</div>
+        </div>
+        <div className="mini">
+          <strong>Status caixa</strong>
+          <div className={valorClasse(resumo.resultado || 0)}>{(resumo.resultado || 0) >= 0 ? 'Saudavel' : 'Atencao'}</div>
+        </div>
+        <div className="mini">
+          <strong>Modulo ativo</strong>
+          <div>{moduloAtivo}</div>
+        </div>
+        <div className="mini">
+          <strong>Usuario</strong>
+          <div>{usuario?.nome || 'Socio'}</div>
+        </div>
+      </section>
+
+      <section className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Categoria</th>
+              <th>Descricao</th>
+              <th>Valor</th>
+              <th>Acao</th>
+            </tr>
+          </thead>
+          <tbody>
+            {carregando && (
+              <tr>
+                <td colSpan="6">Carregando transacoes...</td>
+              </tr>
+            )}
+
+            {!carregando && transacoes.length === 0 && (
+              <tr>
+                <td colSpan="6">Nenhuma transacao neste periodo.</td>
+              </tr>
+            )}
+
+            {!carregando && transacoes.map((t) => (
+              <tr key={t.id}>
+                <td>{formatDate(t.data_transacao)}</td>
+                <td>{t.tipo}</td>
+                <td>{t.categoria}</td>
+                <td>{t.descricao}</td>
+                <td className={t.tipo === 'receita' ? 'kpi-positive' : 'kpi-negative'}>
+                  {t.tipo === 'receita' ? '+' : '-'} {formatCurrency(Number(t.valor || 0))}
+                </td>
+                <td>
+                  <button className="btn" style={{ background: '#f5d7d4', color: '#8f281f' }} onClick={() => deletarTransacao(t.id)} type="button">
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: '20px',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh'
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto'
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    marginBottom: '32px'
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-  },
-  cardLabel: {
-    fontSize: '12px',
-    color: C.muted,
-    marginBottom: '8px',
-    textTransform: 'uppercase',
-    fontWeight: '600'
-  },
-  cardValue: {
-    fontSize: '28px',
-    fontWeight: '700'
-  },
-  toolbar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    gap: '16px'
-  },
-  filters: {
-    display: 'flex',
-    gap: '12px'
-  },
-  select: {
-    padding: '8px 12px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontFamily: 'inherit',
-    cursor: 'pointer'
-  },
-  primaryBtn: {
-    padding: '10px 16px',
-    backgroundColor: C.accent,
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'opacity 0.2s'
-  },
-  formContainer: {
-    backgroundColor: 'white',
-    padding: '24px',
-    borderRadius: '8px',
-    marginBottom: '24px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-  },
-  formTitle: {
-    marginBottom: '16px',
-    color: C.text,
-    fontSize: '16px'
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '12px'
-  },
-  formInput: {
-    padding: '10px 12px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontFamily: 'inherit',
-    outline: 'none'
-  },
-  listContainer: {
-    backgroundColor: 'white',
-    padding: '24px',
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-  },
-  listTitle: {
-    marginBottom: '16px',
-    color: C.text,
-    fontSize: '16px'
-  },
-  tableContainer: {
-    overflowX: 'auto'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse'
-  },
-  headerRow: {
-    borderBottom: `2px solid ${C.border}`
-  },
-  th: {
-    padding: '12px',
-    textAlign: 'left',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: C.muted,
-    textTransform: 'uppercase'
-  },
-  row: {
-    borderBottom: `1px solid ${C.border}`,
-    '&:hover': {
-      backgroundColor: '#fafafa'
-    }
-  },
-  td: {
-    padding: '12px',
-    fontSize: '13px',
-    color: C.text
-  },
-  badge: {
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: '600',
-    display: 'inline-block'
-  },
-  deleteBtn: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '16px',
-    padding: '4px 8px'
-  },
-  loading: {
-    textAlign: 'center',
-    color: C.muted,
-    padding: '32px'
-  },
-  empty: {
-    textAlign: 'center',
-    color: C.muted,
-    padding: '32px'
-  }
-};

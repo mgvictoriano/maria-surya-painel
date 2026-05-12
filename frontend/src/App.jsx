@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { api, getToken, setToken } from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Navbar from './components/Navbar';
 
 export default function App() {
   const [autenticado, setAutenticado] = useState(false);
@@ -56,24 +55,19 @@ export default function App() {
 
   if (carregando) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px',
-        color: '#666'
-      }}>
-        Carregando...
+      <div className="auth-wrap">
+        <div className="auth-card">
+          <h1 className="auth-title">Maria Surya</h1>
+          <p className="auth-subtitle">Carregando painel financeiro...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      {autenticado && <Navbar usuario={usuario} onLogout={handleLogout} />}
+    <div className="app-shell">
       {autenticado ? (
-        <Dashboard usuario={usuario} />
+        <Dashboard usuario={usuario} onLogout={handleLogout} />
       ) : (
         <Login onLogin={handleLogin} />
       )}

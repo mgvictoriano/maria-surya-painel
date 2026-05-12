@@ -111,6 +111,112 @@ export async function obterResumoFinanceiro(req, res) {
   }
 }
 
+export async function obterDashboard(req, res) {
+  try {
+    const socoId = req.socoId;
+    const mes = Number(req.query.mes) || new Date().getMonth() + 1;
+    const ano = Number(req.query.ano) || new Date().getFullYear();
+    const mesAnterior = mes === 1 ? 12 : mes - 1;
+    const anoMesAnterior = mes === 1 ? ano - 1 : ano;
+
+    const paramsAtual = [socoId, String(mes).padStart(2, '0'), String(ano)];
+    const paramsAnterior = [socoId, String(mesAnterior).padStart(2, '0'), String(anoMesAnterior)];
+
+    const atual = await getAsync(
+      `SELECT
+         COALESCE(SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END), 0) AS receitas,
+         COALESCE(SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END), 0) AS despesas,
+         COALESCE(COUNT(*), 0) AS transacoes
+       FROM transacoes
+       WHERE soco_id = ?
+         AND strftime('%m', data_transacao) = ?
+         AND strftime('%Y', data_transacao) = ?`,
+      paramsAtual
+    );
+
+    const anterior = await getAsync(
+      `SELECT
+         COALESCE(SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END), 0) AS receitas,
+         COALESCE(SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END), 0) AS despesas
+       FROM transacoes
+       WHERE soco_id = ?
+         AND strftime('%m', data_transacao) = ?
+         AND strftime('%Y', data_transacao) = ?`,
+      paramsAnterior
+    );
+
+    const saldo = await getAsync('SELECT saldo_atual FROM saldos WHERE id = 1');
+
+    const serieMensal = await allAsync(
+      `SELECT
+         strftime('%Y-%m', data_transacao) AS periodo,
+         COALESCE(SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END), 0) AS receitas,
+         COALESCE(SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END), 0) AS despesas
+       FROM transacoes
+       WHERE soco_id = ?
+         AND date(data_transacao) >= date('now', '-11 months', 'start of month')
+       GROUP BY strftime('%Y-%m', data_transacao)
+       ORDER BY periodo ASC`,
+      [socoId]
+    );
+
+    const categorias = await allAsync(
+      `SELECT
+         categoria,
+         tipo,
+         COALESCE(SUM(valor), 0) AS total
+       FROM transacoes
+       WHERE soco_id = ?
+         AND strftime('%m', data_transacao) = ?
+         AND strftime('%Y', data_transacao) = ?
+       GROUP BY categoria, tipo
+       ORDER BY total DESC
+       LIMIT 6`,
+      paramsAtual
+    );
+
+    const receitas = Number(atual?.receitas || 0);
+    const despesas = Number(atual?.despesas || 0);
+    const resultado = receitas - despesas;
+
+    const receitasAnterior = Number(anterior?.receitas || 0);
+    const despesasAnterior = Number(anterior?.despesas || 0);
+    const resultadoAnterior = receitasAnterior - despesasAnterior;
+
+    const variacaoResultado = resultadoAnterior === 0
+      ? (resultado === 0 ? 0 : 100)
+      : ((resultado - resultadoAnterior) / Math.abs(resultadoAnterior)) * 100;
+
+    res.json({
+      periodo: { mes, ano },
+      kpis: {
+        receitas,
+        despesas,
+        resultado,
+        saldoAcumulado: Number(saldo?.saldo_atual || 0),
+        transacoes: Number(atual?.transacoes || 0),
+        variacaoResultado: Number(variacaoResultado.toFixed(2))
+      },
+      series: {
+        mensal: serieMensal.map((item) => ({
+          periodo: item.periodo,
+          receitas: Number(item.receitas || 0),
+          despesas: Number(item.despesas || 0),
+          resultado: Number(item.receitas || 0) - Number(item.despesas || 0)
+        }))
+      },
+      categorias: categorias.map((item) => ({
+        categoria: item.categoria,
+        tipo: item.tipo,
+        total: Number(item.total || 0)
+      }))
+    });
+  } catch (erro) {
+    console.error('Erro ao obter dashboard:', erro);
+    res.status(500).json({ erro: 'Erro ao carregar dados do dashboard' });
+  }
+}
+
 export async function deletarTransacao(req, res) {
   try {
     const { id } = req.params;

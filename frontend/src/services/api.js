@@ -76,5 +76,12 @@ export const transacaoService = {
   },
   criar: (tipo, categoria, descricao, valor, dataTrasacao) =>
     api.post('/transacoes', { tipo, categoria, descricao, valor, dataTrasacao }),
+  dashboard: (mes, ano) => {
+    let url = '/transacoes/dashboard';
+    if (mes && ano) {
+      url += `?mes=${mes}&ano=${ano}`;
+    }
+    return api.get(url);
+  },
   deletar: (id) => api.delete(`/transacoes/${id}`)
 };
