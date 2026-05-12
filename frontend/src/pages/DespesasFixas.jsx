@@ -29,6 +29,12 @@ function getDataPagamento(descricao) {
   return /^\d{4}-\d{2}-\d{2}$/.test(tag) ? tag : '';
 }
 
+function getStatus(descricao) {
+  const tag = getTagValue(descricao, 'status');
+  if (tag === 'pago' || tag === 'a pagar') return tag;
+  return hasTag(descricao, '[status:pago]') ? 'pago' : 'a pagar';
+}
+
 function isRecorrente(descricao) {
   const tag = getTagValue(descricao, 'rec');
   // Compatibilidade: lançamentos antigos sem tag continuam recorrentes.
@@ -159,6 +165,34 @@ export default function DespesasFixas({ usuario }) {
 
   async function excluir(id) {
     if (!window.confirm('Excluir despesa fixa?')) return;
+
+    const item = itens.find((t) => t.id === id);
+    if (item && isRecorrente(item.descricao)) {
+      const confirmarEncerrar = window.confirm(
+        'Essa conta é recorrente. Ao excluir, a recorrência será encerrada para não recriar automaticamente. Continuar?'
+      );
+      if (!confirmarEncerrar) return;
+
+      const respHistorico = await transacaoService.listar();
+      const chave = keyFixa(item);
+      const relacionados = (respHistorico.transacoes || []).filter(
+        (t) => isFixa(t) && keyFixa(t) === chave && isRecorrente(t.descricao)
+      );
+
+      await Promise.all(
+        relacionados.map((t) =>
+          transacaoService.atualizar(t.id, {
+            descricao: buildDescricao(
+              cleanDescricao(t.descricao) || t.categoria,
+              getStatus(t.descricao),
+              false,
+              getDataPagamento(t.descricao)
+            )
+          })
+        )
+      );
+    }
+
     await transacaoService.deletar(id);
     carregar();
   }
