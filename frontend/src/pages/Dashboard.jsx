@@ -16,16 +16,21 @@ import { transacaoService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import Entradas from './Entradas';
 import DespesasFixas from './DespesasFixas';
+import DespesasVariaveis from './DespesasVariaveis';
+import Dividas from './Dividas';
+import Retiradas from './Retiradas';
+import FluxoCaixa from './FluxoCaixa';
+import Relatorio from './Relatorio';
 
 const MODULOS = [
-  'Dashboard',
-  'Entradas',
-  'Desp. Fixas',
-  'Desp. Variaveis',
-  'Dividas',
-  'Retiradas',
-  'Fluxo de Caixa',
-  'Relatorio'
+  { id: 'Dashboard', label: 'Dashboard', icon: '📊' },
+  { id: 'Entradas', label: 'Entradas', icon: '💰' },
+  { id: 'Desp. Fixas', label: 'Desp. Fixas', icon: '🏠' },
+  { id: 'Desp. Variaveis', label: 'Desp. Variáveis', icon: '🛒' },
+  { id: 'Dividas', label: 'Dívidas', icon: '🏢' },
+  { id: 'Retiradas', label: 'Retiradas', icon: '👤' },
+  { id: 'Fluxo de Caixa', label: 'Fluxo de Caixa', icon: '📋' },
+  { id: 'Relatorio', label: 'Relatório', icon: '📄' }
 ];
 
 const CORES_GRAFICO = ['#1f5d43', '#cc8c21', '#b83c2e', '#3e7a65', '#6f4f2b', '#8a7160'];
@@ -141,41 +146,16 @@ export default function Dashboard({ usuario, onLogout }) {
     }
   }
 
-  // Renderizar módulo correto baseado em moduloAtivo
-  if (moduloAtivo === 'Entradas') return <Entradas />;
-  if (moduloAtivo === 'Desp. Fixas') return <DespesasFixas />;
+  function renderModulo() {
+    if (moduloAtivo === 'Entradas') return <Entradas usuario={usuario} />;
+    if (moduloAtivo === 'Desp. Fixas') return <DespesasFixas usuario={usuario} />;
+    if (moduloAtivo === 'Desp. Variaveis') return <DespesasVariaveis usuario={usuario} />;
+    if (moduloAtivo === 'Dividas') return <Dividas usuario={usuario} />;
+    if (moduloAtivo === 'Retiradas') return <Retiradas usuario={usuario} />;
+    if (moduloAtivo === 'Fluxo de Caixa') return <FluxoCaixa usuario={usuario} />;
+    if (moduloAtivo === 'Relatorio') return <Relatorio usuario={usuario} />;
 
-  return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div className="brand-block">
-          <span className="brand-icon">MS</span>
-          <div>
-            <h1 className="brand-title">Painel Financeiro</h1>
-            <p className="brand-subtitle">Maria Surya Restaurante Arabe</p>
-          </div>
-        </div>
-        <div>
-          <strong>{usuario?.nome || 'Socio'}</strong>
-          <button className="btn" style={{ marginLeft: 12, background: 'rgba(255,255,255,.2)', color: '#fff' }} onClick={onLogout}>
-            Sair
-          </button>
-        </div>
-      </header>
-
-      <nav className="nav-strip">
-        {MODULOS.map((modulo) => (
-          <button
-            key={modulo}
-            className={`nav-pill ${modulo === moduloAtivo ? 'active' : ''}`}
-            onClick={() => setModuloAtivo(modulo)}
-            type="button"
-          >
-            {modulo}
-          </button>
-        ))}
-      </nav>
-
+    return (
       <div className="dashboard-wrap">
 
       <section className="page-head">
@@ -361,6 +341,41 @@ export default function Dashboard({ usuario, onLogout }) {
         </table>
       </section>
       </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand-block">
+          <span className="brand-icon">🌙</span>
+          <div>
+            <h1 className="brand-title">Painel Financeiro</h1>
+            <p className="brand-subtitle">Maria Surya Restaurante Árabe</p>
+          </div>
+        </div>
+        <div>
+          <strong>{usuario?.nome || 'Sócio'}</strong>
+          <button className="btn" style={{ marginLeft: 12, background: 'rgba(255,255,255,.2)', color: '#fff' }} onClick={onLogout}>
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <nav className="nav-strip">
+        {MODULOS.map((modulo) => (
+          <button
+            key={modulo.id}
+            className={`nav-pill ${modulo.id === moduloAtivo ? 'active' : ''}`}
+            onClick={() => setModuloAtivo(modulo.id)}
+            type="button"
+          >
+            <span>{modulo.icon}</span> {modulo.label}
+          </button>
+        ))}
+      </nav>
+
+      {renderModulo()}
     </div>
   );
 }
