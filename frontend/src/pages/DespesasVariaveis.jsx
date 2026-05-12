@@ -4,7 +4,7 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import Modal from '../components/Modal';
 import CurrencyInput from '../components/CurrencyInput';
 
-const FIXAS = ['aluguel', 'salario', 'salários', 'energia', 'agua', 'água', 'internet', 'telefone', 'contabilidade', 'marketing'];
+const FIXAS = ['aluguel', 'salario', 'salários', 'internet', 'telefone', 'contabilidade', 'marketing'];
 
 function isVariavel(transacao) {
   const categoria = String(transacao.categoria || '').toLowerCase();

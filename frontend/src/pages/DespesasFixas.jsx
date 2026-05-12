@@ -4,7 +4,8 @@ import { formatCurrency } from '../utils/formatters';
 import Modal from '../components/Modal';
 import CurrencyInput from '../components/CurrencyInput';
 
-const CATEGORIAS_FIXAS = ['Aluguel', 'Salários', 'Energia', 'Água', 'Internet', 'Contabilidade', 'Marketing'];
+const CATEGORIAS_FIXAS = ['Aluguel', 'Salários', 'Internet', 'Contabilidade', 'Marketing'];
+const TERMOS_FIXOS = ['aluguel', 'salario', 'salários', 'internet', 'contabilidade', 'marketing'];
 
 function hasTag(descricao, tag) {
   return String(descricao || '').toLowerCase().includes(tag.toLowerCase());
@@ -14,10 +15,20 @@ function cleanDescricao(descricao) {
   return String(descricao || '').replace(/\s*\[status:[^\]]+\]/i, '').trim();
 }
 
+function toDateOnlyString(data) {
+  return String(data || '').slice(0, 10);
+}
+
+function keyFixa(item) {
+  const categoria = String(item.categoria || '').trim().toLowerCase();
+  const descBase = String(cleanDescricao(item.descricao) || item.categoria || '').trim().toLowerCase();
+  return `${categoria}|${descBase}`;
+}
+
 function isFixa(item) {
   if (item.tipo !== 'despesa') return false;
   const texto = `${item.categoria || ''} ${item.descricao || ''}`.toLowerCase();
-  return ['aluguel', 'salario', 'salários', 'energia', 'agua', 'água', 'internet', 'contabilidade', 'marketing'].some((term) => texto.includes(term));
+  return TERMOS_FIXOS.some((term) => texto.includes(term));
 }
 
 export default function DespesasFixas({ usuario }) {
@@ -27,13 +38,13 @@ export default function DespesasFixas({ usuario }) {
   const [showForm, setShowForm] = useState(false);
   const [showEditar, setShowEditar] = useState(false);
   const [itemSelecionado, setItemSelecionado] = useState(null);
-  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'Pago' });
+  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar' });
   const [itens, setItens] = useState([]);
   const [form, setForm] = useState({
     categoria: 'Aluguel',
     descricao: '',
     valor: '',
-    status: 'Pago',
+    status: 'A pagar',
     dataTrasacao: new Date().toISOString().split('T')[0]
   });
 
@@ -49,16 +60,60 @@ export default function DespesasFixas({ usuario }) {
     carregar();
   }, [mesAtual, anoAtual]);
 
+  async function garantirRecorrenciaMensal() {
+    const [respHistorico, respMes] = await Promise.all([
+      transacaoService.listar(),
+      transacaoService.listar(mesAtual, anoAtual)
+    ]);
+
+    const historicoFixas = (respHistorico.transacoes || [])
+      .filter(isFixa)
+      .sort((a, b) => toDateOnlyString(b.data_transacao).localeCompare(toDateOnlyString(a.data_transacao)));
+
+    const jaLancadasNoMes = new Set((respMes.transacoes || []).filter(isFixa).map(keyFixa));
+    const templatesPorChave = new Map();
+
+    for (const item of historicoFixas) {
+      const chave = keyFixa(item);
+      if (!templatesPorChave.has(chave)) {
+        templatesPorChave.set(chave, item);
+      }
+    }
+
+    const dataPadraoMes = `${anoAtual}-${String(mesAtual).padStart(2, '0')}-01`;
+    const faltantes = [...templatesPorChave.entries()]
+      .filter(([chave]) => !jaLancadasNoMes.has(chave))
+      .map(([, item]) => ({
+        categoria: item.categoria,
+        descricao: `${cleanDescricao(item.descricao) || item.categoria} [status:a pagar]`,
+        valor: Number(item.valor || 0),
+      }))
+      .filter((item) => item.valor > 0);
+
+    if (faltantes.length > 0) {
+      await Promise.all(
+        faltantes.map((item) =>
+          transacaoService.criar('despesa', item.categoria, item.descricao, item.valor, dataPadraoMes)
+        )
+      );
+    }
+  }
+
   async function carregar() {
-    const resp = await transacaoService.listar(mesAtual, anoAtual);
-    setItens((resp.transacoes || []).filter(isFixa));
+    try {
+      await garantirRecorrenciaMensal();
+      const resp = await transacaoService.listar(mesAtual, anoAtual);
+      setItens((resp.transacoes || []).filter(isFixa));
+    } catch (erro) {
+      alert(`Erro ao carregar: ${erro.message}`);
+    }
   }
 
   async function salvar(e) {
     e.preventDefault();
     const descricao = `${form.descricao || form.categoria} [status:${form.status.toLowerCase()}]`;
     await transacaoService.criar('despesa', form.categoria, descricao, Number(form.valor), form.dataTrasacao);
-    setForm({ categoria: 'Aluguel', descricao: '', valor: '', status: 'Pago', dataTrasacao: new Date().toISOString().split('T')[0] });
+    setForm({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', dataTrasacao: new Date().toISOString().split('T')[0] });
     setShowForm(false);
     carregar();
   }
@@ -110,7 +165,7 @@ export default function DespesasFixas({ usuario }) {
       <section className="page-head">
         <div>
           <h2 className="page-title">🏠 Despesas Fixas</h2>
-          <p className="page-note">Contas recorrentes mensais</p>
+          <p className="page-note">Contas recorrentes mensais (geradas automaticamente por mês)</p>
         </div>
         <div className="page-actions">
           <select className="select" value={mesAtual} onChange={(e) => setMesAtual(Number(e.target.value))}>
