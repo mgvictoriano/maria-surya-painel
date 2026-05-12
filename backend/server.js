@@ -21,9 +21,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Inicializar banco de dados
-initDatabase();
-
 // Rotas públicas
 app.use('/api/auth', authRoutes);
 
@@ -48,7 +45,18 @@ app.get('*', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📊 Painel Maria Surya - Pronto para usar`);
-});
+async function startServer() {
+  try {
+    await initDatabase();
+
+    app.listen(PORT, () => {
+      console.log(`✅ Servidor rodando em http://localhost:${PORT}`);
+      console.log(`📊 Painel Maria Surya - Pronto para usar`);
+    });
+  } catch (err) {
+    console.error('❌ Falha ao iniciar servidor por erro de banco de dados.', err);
+    process.exit(1);
+  }
+}
+
+startServer();

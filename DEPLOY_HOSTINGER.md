@@ -43,7 +43,11 @@ Na dashboard da Hostinger, crie as variáveis:
 NODE_ENV=production
 PORT=3000
 JWT_SECRET=GERE_UMA_CHAVE_SUPER_SEGURA_AQUI
-DATABASE_PATH=./data/maria-surya.db
+MYSQL_HOST=SEU_HOST_MYSQL
+MYSQL_PORT=3306
+MYSQL_USER=SEU_USUARIO_MYSQL
+MYSQL_PASSWORD=SUA_SENHA_MYSQL
+MYSQL_DATABASE=SEU_BANCO_MYSQL
 ```
 
 **Para gerar uma chave JWT segura:**
@@ -101,7 +105,7 @@ const BASE_URL = process.env.VITE_API_URL || '/api';
 - Verifique se JWT_SECRET está correto em ambos os serviços
 
 **Banco de dados não persiste**
-- Certifique-se que o diretório `data/` existe e tem permissões de escrita
+- Use MySQL da Hostinger (variáveis `MYSQL_*`) para garantir persistência após restart e reimplantações
 
 ## Monitoramento
 

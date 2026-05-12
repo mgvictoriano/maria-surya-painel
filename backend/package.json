@@ -10,16 +10,20 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "cd ../frontend && npm install --include=dev && npm run build"
   },
-  "keywords": ["financeiro", "restaurante", "maria-surya"],
+  "keywords": [
+    "financeiro",
+    "restaurante",
+    "maria-surya"
+  ],
   "author": "Maria Surya",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
-    "bcryptjs": "^2.4.3",
-    "sqlite3": "^5.1.6",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5",
-    "body-parser": "^1.20.2"
+    "mysql2": "^3.22.3"
   }
 }

@@ -1,5 +1,13 @@
 import { getAsync, runAsync, allAsync } from '../database/init.js';
 
+function monthYearCondition(coluna = 'data_transacao') {
+  return `MONTH(${coluna}) = ? AND YEAR(${coluna}) = ?`;
+}
+
+function monthYearParams(mes, ano) {
+  return [Number(mes), Number(ano)];
+}
+
 export async function criarTransacao(req, res) {
   try {
     const { tipo, categoria, descricao, valor, dataTrasacao } = req.body;
@@ -55,11 +63,10 @@ export async function listarTransacoes(req, res) {
         SELECT id, tipo, categoria, descricao, valor, data_transacao, criado_em
         FROM transacoes
         WHERE soco_id = ? 
-          AND strftime('%m', data_transacao) = ? 
-          AND strftime('%Y', data_transacao) = ?
+          AND ${monthYearCondition('data_transacao')}
         ORDER BY data_transacao DESC
       `;
-      params = [socoId, String(mes).padStart(2, '0'), ano];
+      params = [socoId, ...monthYearParams(mes, ano)];
     }
 
     const transacoes = await allAsync(sql, params);
@@ -79,8 +86,8 @@ export async function obterResumoFinanceiro(req, res) {
     let params = [socoId];
 
     if (mes && ano) {
-      whereClauses += ` AND strftime('%m', data_transacao) = ? AND strftime('%Y', data_transacao) = ?`;
-      params.push(String(mes).padStart(2, '0'), ano);
+      whereClauses += ` AND ${monthYearCondition('data_transacao')}`;
+      params.push(...monthYearParams(mes, ano));
     }
 
     const totalReceitas = await getAsync(
@@ -119,8 +126,8 @@ export async function obterDashboard(req, res) {
     const mesAnterior = mes === 1 ? 12 : mes - 1;
     const anoMesAnterior = mes === 1 ? ano - 1 : ano;
 
-    const paramsAtual = [socoId, String(mes).padStart(2, '0'), String(ano)];
-    const paramsAnterior = [socoId, String(mesAnterior).padStart(2, '0'), String(anoMesAnterior)];
+    const paramsAtual = [socoId, ...monthYearParams(mes, ano)];
+    const paramsAnterior = [socoId, ...monthYearParams(mesAnterior, anoMesAnterior)];
 
     const atual = await getAsync(
       `SELECT
@@ -129,8 +136,7 @@ export async function obterDashboard(req, res) {
          COALESCE(COUNT(*), 0) AS transacoes
        FROM transacoes
        WHERE soco_id = ?
-         AND strftime('%m', data_transacao) = ?
-         AND strftime('%Y', data_transacao) = ?`,
+         AND ${monthYearCondition('data_transacao')}`,
       paramsAtual
     );
 
@@ -140,22 +146,24 @@ export async function obterDashboard(req, res) {
          COALESCE(SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END), 0) AS despesas
        FROM transacoes
        WHERE soco_id = ?
-         AND strftime('%m', data_transacao) = ?
-         AND strftime('%Y', data_transacao) = ?`,
+         AND ${monthYearCondition('data_transacao')}`,
       paramsAnterior
     );
 
     const saldo = await getAsync('SELECT saldo_atual FROM saldos WHERE id = 1');
 
+    const periodoExpr = "DATE_FORMAT(data_transacao, '%Y-%m')";
+    const recorteUltimos12Meses = "AND data_transacao >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)";
+
     const serieMensal = await allAsync(
       `SELECT
-         strftime('%Y-%m', data_transacao) AS periodo,
+         ${periodoExpr} AS periodo,
          COALESCE(SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END), 0) AS receitas,
          COALESCE(SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END), 0) AS despesas
        FROM transacoes
        WHERE soco_id = ?
-         AND date(data_transacao) >= date('now', '-11 months', 'start of month')
-       GROUP BY strftime('%Y-%m', data_transacao)
+         ${recorteUltimos12Meses}
+       GROUP BY ${periodoExpr}
        ORDER BY periodo ASC`,
       [socoId]
     );
@@ -167,8 +175,7 @@ export async function obterDashboard(req, res) {
          COALESCE(SUM(valor), 0) AS total
        FROM transacoes
        WHERE soco_id = ?
-         AND strftime('%m', data_transacao) = ?
-         AND strftime('%Y', data_transacao) = ?
+         AND ${monthYearCondition('data_transacao')}
        GROUP BY categoria, tipo
        ORDER BY total DESC
        LIMIT 6`,

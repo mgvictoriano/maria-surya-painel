@@ -1,16 +1,4 @@
-import sqlite3 from 'sqlite3';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import fs from 'fs';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, '../../data');
-const dbPath = join(dataDir, 'maria-surya.db');
-
-// Garantir que a pasta data existe
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+import mysql from 'mysql2/promise';
 
 let db = null;
 
@@ -18,94 +6,87 @@ export function getDatabase() {
   return db;
 }
 
-export function initDatabase() {
-  return new Promise((resolve, reject) => {
-    db = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        console.error('❌ Erro ao conectar ao banco:', err);
-        reject(err);
-        return;
-      }
-      
-      console.log('✅ Banco de dados inicializado:', dbPath);
-      
-      // Criar tabelas se não existirem
-      db.serialize(() => {
-        // Tabela de sócios
-        db.run(`
-          CREATE TABLE IF NOT EXISTS socios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            senha_hash TEXT NOT NULL,
-            ativo BOOLEAN DEFAULT 1,
-            criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-            atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
+function validateMySqlEnv() {
+  const required = ['MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
+  const missing = required.filter((key) => !process.env[key]);
 
-        // Tabela de transações (receitas e despesas)
-        db.run(`
-          CREATE TABLE IF NOT EXISTS transacoes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo TEXT NOT NULL CHECK(tipo IN ('receita', 'despesa')),
-            categoria TEXT NOT NULL,
-            descricao TEXT NOT NULL,
-            valor DECIMAL(10, 2) NOT NULL,
-            data_transacao DATE NOT NULL,
-            soco_id INTEGER NOT NULL,
-            criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-            atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (soco_id) REFERENCES socios(id) ON DELETE CASCADE
-          )
-        `);
-
-        // Tabela de saldo
-        db.run(`
-          CREATE TABLE IF NOT EXISTS saldos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            saldo_atual DECIMAL(12, 2) DEFAULT 0,
-            atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-
-        // Inserir saldo inicial se não existir
-        db.run(`
-          INSERT OR IGNORE INTO saldos (id, saldo_atual)
-          VALUES (1, 0)
-        `);
-
-        console.log('📋 Tabelas criadas com sucesso');
-      });
-
-      resolve();
-    });
-  });
+  if (missing.length > 0) {
+    throw new Error(`Variáveis MySQL ausentes: ${missing.join(', ')}`);
+  }
 }
 
-export function runAsync(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
+export async function initDatabase() {
+  validateMySqlEnv();
+
+  db = await mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    port: Number(process.env.MYSQL_PORT || 3306),
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
   });
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS socios (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      senha_hash VARCHAR(255) NOT NULL,
+      ativo TINYINT(1) DEFAULT 1,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+      atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS transacoes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tipo ENUM('receita', 'despesa') NOT NULL,
+      categoria VARCHAR(255) NOT NULL,
+      descricao TEXT NOT NULL,
+      valor DECIMAL(12, 2) NOT NULL,
+      data_transacao DATE NOT NULL,
+      soco_id INT NOT NULL,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+      atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_transacoes_socio FOREIGN KEY (soco_id) REFERENCES socios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS saldos (
+      id INT PRIMARY KEY,
+      saldo_atual DECIMAL(14, 2) DEFAULT 0,
+      atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await db.query(`
+    INSERT INTO saldos (id, saldo_atual)
+    VALUES (1, 0)
+    ON DUPLICATE KEY UPDATE id = id
+  `);
+  console.log('✅ Banco de dados inicializado: MySQL');
+  console.log('📋 Tabelas criadas com sucesso');
 }
 
-export function getAsync(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+export async function runAsync(sql, params = []) {
+  const [result] = await db.execute(sql, params);
+  return {
+    lastID: result.insertId || 0,
+    changes: result.affectedRows || 0
+  };
 }
 
-export function allAsync(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+export async function getAsync(sql, params = []) {
+  const [rows] = await db.execute(sql, params);
+  return rows[0];
+}
+
+export async function allAsync(sql, params = []) {
+  const [rows] = await db.execute(sql, params);
+  return rows;
 }
