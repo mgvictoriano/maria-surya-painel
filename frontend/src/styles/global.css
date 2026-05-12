@@ -140,6 +140,16 @@ input {
   grid-template-columns: 1.2fr 1fr;
 }
 
+.dashboard-gerencial .page-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dashboard-gerencial .page-actions .input,
+.dashboard-gerencial .page-actions .select {
+  min-width: 130px;
+}
+
 .page-actions {
   display: flex;
   align-items: center;
