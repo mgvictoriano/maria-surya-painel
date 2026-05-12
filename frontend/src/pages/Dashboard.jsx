@@ -60,6 +60,16 @@ function containsStatusPago(descricao) {
   return String(descricao || '').toLowerCase().includes('[status:pago]');
 }
 
+function getTagValue(descricao, tag) {
+  const match = String(descricao || '').match(new RegExp(`\\[${tag}:([^\\]]+)\\]`, 'i'));
+  return match ? String(match[1]).trim().toLowerCase() : '';
+}
+
+function getDataPagamento(descricao) {
+  const tag = getTagValue(descricao, 'dtpg');
+  return /^\d{4}-\d{2}-\d{2}$/.test(tag) ? tag : '';
+}
+
 function isDespesaFixaByText(item) {
   const texto = `${item.categoria || ''} ${item.descricao || ''}`.toLowerCase();
   return TERMOS_FIXOS.some((term) => texto.includes(term));
@@ -70,6 +80,14 @@ function isTransacaoEfetiva(item) {
   if (item.tipo !== 'despesa') return false;
   if (!isDespesaFixaByText(item)) return true;
   return containsStatusPago(item.descricao);
+}
+
+function getDataEfetiva(item) {
+  if (item.tipo === 'despesa' && isDespesaFixaByText(item) && containsStatusPago(item.descricao)) {
+    const dataPagamento = getDataPagamento(item.descricao);
+    if (dataPagamento) return dataPagamento;
+  }
+  return toDateOnlyString(item.data_transacao);
 }
 
 function parseDateOnly(data) {
@@ -213,8 +231,12 @@ export default function Dashboard({ usuario, onLogout }) {
   );
 
   const transacoesEfetivas = useMemo(
-    () => transacoesFiltradas.filter(isTransacaoEfetiva),
-    [transacoesFiltradas]
+    () => (transacoesBase || []).filter((item) => {
+      if (!isTransacaoEfetiva(item)) return false;
+      const dataItem = parseDateOnly(getDataEfetiva(item));
+      return dataItem >= intervaloSelecionado.inicio && dataItem <= intervaloSelecionado.fim;
+    }),
+    [transacoesBase, intervaloSelecionado]
   );
 
   const resumo = useMemo(() => {
@@ -229,7 +251,7 @@ export default function Dashboard({ usuario, onLogout }) {
     const resultado = receitas - despesas;
 
     const ateFim = (transacoesBase || []).filter((item) => {
-      const dataItem = parseDateOnly(toDateOnlyString(item.data_transacao));
+      const dataItem = parseDateOnly(getDataEfetiva(item));
       return dataItem <= intervaloSelecionado.fim;
     }).filter(isTransacaoEfetiva);
 
@@ -239,7 +261,7 @@ export default function Dashboard({ usuario, onLogout }) {
     }, 0);
 
     const transacoesPrev = (transacoesBase || []).filter((item) => {
-      const dataItem = parseDateOnly(toDateOnlyString(item.data_transacao));
+      const dataItem = parseDateOnly(getDataEfetiva(item));
       return dataItem >= intervaloAnterior.inicio && dataItem <= intervaloAnterior.fim;
     }).filter(isTransacaoEfetiva);
 
@@ -274,7 +296,7 @@ export default function Dashboard({ usuario, onLogout }) {
     }
 
     transacoesEfetivas.forEach((item) => {
-      const key = monthKeyFromDate(parseDateOnly(toDateOnlyString(item.data_transacao)));
+      const key = monthKeyFromDate(parseDateOnly(getDataEfetiva(item)));
       if (!mapa.has(key)) return;
       const atual = mapa.get(key);
       const valor = Number(item.valor || 0);

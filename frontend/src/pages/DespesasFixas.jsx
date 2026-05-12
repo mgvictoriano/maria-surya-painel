@@ -20,7 +20,13 @@ function cleanDescricao(descricao) {
   return String(descricao || '')
     .replace(/\s*\[status:[^\]]+\]/i, '')
     .replace(/\s*\[rec:[^\]]+\]/i, '')
+    .replace(/\s*\[dtpg:[^\]]+\]/i, '')
     .trim();
+}
+
+function getDataPagamento(descricao) {
+  const tag = getTagValue(descricao, 'dtpg');
+  return /^\d{4}-\d{2}-\d{2}$/.test(tag) ? tag : '';
 }
 
 function isRecorrente(descricao) {
@@ -30,11 +36,14 @@ function isRecorrente(descricao) {
   return tag === '1' || tag === 'sim' || tag === 'true';
 }
 
-function buildDescricao(base, status, recorrente) {
+function buildDescricao(base, status, recorrente, dataPagamento = '') {
   const texto = String(base || '').trim();
   const statusTag = `[status:${String(status || 'a pagar').toLowerCase()}]`;
   const recTag = `[rec:${recorrente ? '1' : '0'}]`;
-  return `${texto} ${statusTag} ${recTag}`.trim();
+  const dtpgTag = String(status || '').toLowerCase() === 'pago' && dataPagamento
+    ? ` [dtpg:${dataPagamento}]`
+    : '';
+  return `${texto} ${statusTag} ${recTag}${dtpgTag}`.trim();
 }
 
 function toDateOnlyString(data) {
@@ -60,7 +69,7 @@ export default function DespesasFixas({ usuario }) {
   const [showForm, setShowForm] = useState(false);
   const [showEditar, setShowEditar] = useState(false);
   const [itemSelecionado, setItemSelecionado] = useState(null);
-  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', recorrente: 'Sim' });
+  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', recorrente: 'Sim', dataPagamento: '' });
   const [itens, setItens] = useState([]);
   const [form, setForm] = useState({
     categoria: 'Aluguel',
@@ -68,6 +77,7 @@ export default function DespesasFixas({ usuario }) {
     valor: '',
     status: 'A pagar',
     recorrente: 'Sim',
+    dataPagamento: '',
     dataTrasacao: new Date().toISOString().split('T')[0]
   });
 
@@ -135,9 +145,14 @@ export default function DespesasFixas({ usuario }) {
 
   async function salvar(e) {
     e.preventDefault();
-    const descricao = buildDescricao(form.descricao || form.categoria, form.status, form.recorrente === 'Sim');
+    const descricao = buildDescricao(
+      form.descricao || form.categoria,
+      form.status,
+      form.recorrente === 'Sim',
+      form.status === 'Pago' ? (form.dataPagamento || form.dataTrasacao) : ''
+    );
     await transacaoService.criar('despesa', form.categoria, descricao, Number(form.valor), form.dataTrasacao);
-    setForm({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', recorrente: 'Sim', dataTrasacao: new Date().toISOString().split('T')[0] });
+    setForm({ categoria: 'Aluguel', descricao: '', valor: '', status: 'A pagar', recorrente: 'Sim', dataPagamento: '', dataTrasacao: new Date().toISOString().split('T')[0] });
     setShowForm(false);
     carregar();
   }
@@ -151,7 +166,13 @@ export default function DespesasFixas({ usuario }) {
   async function toggleStatus(item) {
     const isPago = hasTag(item.descricao, '[status:pago]');
     const novoStatus = isPago ? 'a pagar' : 'pago';
-    const novaDesc = buildDescricao(cleanDescricao(item.descricao) || item.categoria, novoStatus, isRecorrente(item.descricao));
+    const dataHoje = new Date().toISOString().split('T')[0];
+    const novaDesc = buildDescricao(
+      cleanDescricao(item.descricao) || item.categoria,
+      novoStatus,
+      isRecorrente(item.descricao),
+      novoStatus === 'pago' ? dataHoje : ''
+    );
     await transacaoService.atualizar(item.id, { descricao: novaDesc });
     carregar();
   }
@@ -165,13 +186,19 @@ export default function DespesasFixas({ usuario }) {
       valor: String(item.valor || ''),
       status: isPago ? 'Pago' : 'A pagar',
       recorrente: isRecorrente(item.descricao) ? 'Sim' : 'Não',
+      dataPagamento: getDataPagamento(item.descricao) || toDateOnlyString(item.data_transacao),
     });
     setShowEditar(true);
   }
 
   async function salvarEdicao(e) {
     e.preventDefault();
-    const novaDesc = buildDescricao(formEditar.descricao || formEditar.categoria, formEditar.status, formEditar.recorrente === 'Sim');
+    const novaDesc = buildDescricao(
+      formEditar.descricao || formEditar.categoria,
+      formEditar.status,
+      formEditar.recorrente === 'Sim',
+      formEditar.status === 'Pago' ? (formEditar.dataPagamento || toDateOnlyString(itemSelecionado?.data_transacao)) : ''
+    );
     await transacaoService.atualizar(itemSelecionado.id, {
       categoria: formEditar.categoria,
       descricao: novaDesc,
@@ -220,6 +247,15 @@ export default function DespesasFixas({ usuario }) {
             <option>Pago</option>
             <option>A pagar</option>
           </select>
+          {form.status === 'Pago' && (
+            <input
+              className="input"
+              type="date"
+              value={form.dataPagamento || form.dataTrasacao}
+              onChange={(e) => setForm({ ...form, dataPagamento: e.target.value })}
+              required
+            />
+          )}
           <select
             className="input"
             value={form.recorrente}
@@ -246,6 +282,15 @@ export default function DespesasFixas({ usuario }) {
             <option>Pago</option>
             <option>A pagar</option>
           </select>
+          {formEditar.status === 'Pago' && (
+            <input
+              className="input"
+              type="date"
+              value={formEditar.dataPagamento || toDateOnlyString(itemSelecionado?.data_transacao)}
+              onChange={(e) => setFormEditar({ ...formEditar, dataPagamento: e.target.value })}
+              required
+            />
+          )}
           <select
             className="input"
             value={formEditar.recorrente}
