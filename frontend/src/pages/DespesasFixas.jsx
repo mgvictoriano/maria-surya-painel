@@ -24,6 +24,9 @@ export default function DespesasFixas({ usuario }) {
   const [mesAtual, setMesAtual] = useState(hoje.getMonth() + 1);
   const [anoAtual, setAnoAtual] = useState(hoje.getFullYear());
   const [showForm, setShowForm] = useState(false);
+  const [showEditar, setShowEditar] = useState(false);
+  const [itemSelecionado, setItemSelecionado] = useState(null);
+  const [formEditar, setFormEditar] = useState({ categoria: 'Aluguel', descricao: '', valor: '', status: 'Pago' });
   const [itens, setItens] = useState([]);
   const [form, setForm] = useState({
     categoria: 'Aluguel',
@@ -62,6 +65,38 @@ export default function DespesasFixas({ usuario }) {
   async function excluir(id) {
     if (!window.confirm('Excluir despesa fixa?')) return;
     await transacaoService.deletar(id);
+    carregar();
+  }
+
+  async function toggleStatus(item) {
+    const isPago = hasTag(item.descricao, '[status:pago]');
+    const novoStatus = isPago ? 'a pagar' : 'pago';
+    const novaDesc = `${cleanDescricao(item.descricao) || item.categoria} [status:${novoStatus}]`;
+    await transacaoService.atualizar(item.id, { descricao: novaDesc });
+    carregar();
+  }
+
+  function abrirEditar(item) {
+    const isPago = hasTag(item.descricao, '[status:pago]');
+    setItemSelecionado(item);
+    setFormEditar({
+      categoria: item.categoria || 'Aluguel',
+      descricao: cleanDescricao(item.descricao),
+      valor: String(item.valor || ''),
+      status: isPago ? 'Pago' : 'A pagar',
+    });
+    setShowEditar(true);
+  }
+
+  async function salvarEdicao(e) {
+    e.preventDefault();
+    const novaDesc = `${formEditar.descricao || formEditar.categoria} [status:${formEditar.status.toLowerCase()}]`;
+    await transacaoService.atualizar(itemSelecionado.id, {
+      categoria: formEditar.categoria,
+      descricao: novaDesc,
+      valor: Number(formEditar.valor),
+    });
+    setShowEditar(false);
     carregar();
   }
 
@@ -109,6 +144,21 @@ export default function DespesasFixas({ usuario }) {
         </form>
       </Modal>
 
+      <Modal open={showEditar} onClose={() => setShowEditar(false)} title="Editar Despesa Fixa">
+        <form className="txn-form" onSubmit={salvarEdicao}>
+          <select className="input" value={formEditar.categoria} onChange={(e) => setFormEditar({ ...formEditar, categoria: e.target.value })}>
+            {CATEGORIAS_FIXAS.map((categoria) => <option key={categoria}>{categoria}</option>)}
+          </select>
+          <input className="input" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} placeholder="Descrição" />
+          <input className="input" type="number" min="0" step="0.01" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} placeholder="Valor" required />
+          <select className="input" value={formEditar.status} onChange={(e) => setFormEditar({ ...formEditar, status: e.target.value })}>
+            <option>Pago</option>
+            <option>A pagar</option>
+          </select>
+          <button className="btn btn-brand" type="submit">Salvar Alterações</button>
+        </form>
+      </Modal>
+
       <section className="table-wrap desktop-table">
         <table className="table">
           <thead>
@@ -135,7 +185,11 @@ export default function DespesasFixas({ usuario }) {
                   <td className="kpi-positive" style={{ fontWeight: 700 }}>{pago > 0 ? formatCurrency(pago) : '—'}</td>
                   <td><span className={`pill ${pago > 0 ? 'pill-success' : 'pill-warn'}`}>{pago > 0 ? 'Pago' : 'A pagar'}</span></td>
                   <td><span className="pill">{usuario?.nome || 'Sócio'}</span></td>
-                  <td><button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button">×</button></td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-secondary" onClick={() => toggleStatus(item)} type="button" title="Alternar status">{pago > 0 ? '✔️ Pago' : '⏳ A pagar'}</button>
+                    <button className="btn btn-secondary" onClick={() => abrirEditar(item)} type="button">✏️</button>
+                    <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button">×</button>
+                  </td>
                 </tr>
               );
             })}
@@ -163,7 +217,11 @@ export default function DespesasFixas({ usuario }) {
               <div className="mobile-row"><span className="mobile-key">Previsto</span><span className="mobile-value">{formatCurrency(valor)}</span></div>
               <div className="mobile-row"><span className="mobile-key">Pago</span><span className="mobile-value kpi-positive">{pago > 0 ? formatCurrency(pago) : '—'}</span></div>
               <div className="mobile-row"><span className="mobile-key">Registrado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
-              <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button" style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => toggleStatus(item)} type="button">{pago > 0 ? '✔️ Pago' : '⏳ A pagar'}</button>
+                <button className="btn btn-secondary" onClick={() => abrirEditar(item)} type="button">✏️</button>
+                <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button">×</button>
+              </div>
             </article>
           );
         })}

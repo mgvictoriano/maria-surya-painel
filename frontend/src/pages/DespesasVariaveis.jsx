@@ -22,6 +22,9 @@ export default function DespesasVariaveis({ usuario }) {
   const [mesAtual, setMesAtual] = useState(hoje.getMonth() + 1);
   const [anoAtual, setAnoAtual] = useState(hoje.getFullYear());
   const [showForm, setShowForm] = useState(false);
+  const [showEditar, setShowEditar] = useState(false);
+  const [itemSelecionado, setItemSelecionado] = useState(null);
+  const [formEditar, setFormEditar] = useState({ categoria: 'Insumos', descricao: '', valor: '' });
   const [carregando, setCarregando] = useState(true);
   const [itens, setItens] = useState([]);
 
@@ -75,6 +78,27 @@ export default function DespesasVariaveis({ usuario }) {
     carregar();
   }
 
+  function abrirEditar(item) {
+    setItemSelecionado(item);
+    setFormEditar({
+      categoria: item.categoria || 'Insumos',
+      descricao: item.descricao || '',
+      valor: String(item.valor || ''),
+    });
+    setShowEditar(true);
+  }
+
+  async function salvarEdicao(e) {
+    e.preventDefault();
+    await transacaoService.atualizar(itemSelecionado.id, {
+      categoria: formEditar.categoria,
+      descricao: formEditar.descricao,
+      valor: Number(formEditar.valor),
+    });
+    setShowEditar(false);
+    carregar();
+  }
+
   const totalMes = itens.reduce((acc, item) => acc + Number(item.valor || 0), 0);
   const porCategoria = Object.entries(
     itens.reduce((acc, item) => {
@@ -124,6 +148,15 @@ export default function DespesasVariaveis({ usuario }) {
         </form>
       </Modal>
 
+      <Modal open={showEditar} onClose={() => setShowEditar(false)} title="Editar Despesa Variável">
+        <form className="txn-form" onSubmit={salvarEdicao}>
+          <input className="input" placeholder="Categoria" value={formEditar.categoria} onChange={(e) => setFormEditar({ ...formEditar, categoria: e.target.value })} required />
+          <input className="input" placeholder="Fornecedor" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} required />
+          <input className="input" type="number" step="0.01" min="0" placeholder="Valor" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar Alterações</button>
+        </form>
+      </Modal>
+
       <section className="split-grid">
         <article className="table-wrap desktop-table">
           <table className="table">
@@ -152,7 +185,8 @@ export default function DespesasVariaveis({ usuario }) {
                   <td className="kpi-negative" style={{ fontWeight: 700 }}>{formatCurrency(Number(item.valor || 0))}</td>
                   <td><span className="pill">{usuario?.nome || 'Sócio'}</span></td>
                   <td>
-                    <button className="btn btn-danger-soft" type="button" onClick={() => excluir(item.id)}>×</button>
+                    <button className="btn btn-secondary" type="button" onClick={() => abrirEditar(item)}>✏️</button>
+                    <button className="btn btn-danger-soft" type="button" onClick={() => excluir(item.id)} style={{ marginLeft: 6 }}>×</button>
                   </td>
                 </tr>
               ))}
@@ -204,7 +238,10 @@ export default function DespesasVariaveis({ usuario }) {
             <div className="mobile-row"><span className="mobile-key">Data</span><span className="mobile-value">{formatDate(item.data_transacao)}</span></div>
             <div className="mobile-row"><span className="mobile-key">Valor</span><span className="mobile-value kpi-negative">{formatCurrency(Number(item.valor || 0))}</span></div>
             <div className="mobile-row"><span className="mobile-key">Registrado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
-            <button className="btn btn-danger-soft" type="button" onClick={() => excluir(item.id)} style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} type="button" onClick={() => abrirEditar(item)}>✏️ Editar</button>
+              <button className="btn btn-danger-soft" type="button" onClick={() => excluir(item.id)} style={{ marginTop: 0 }}>×</button>
+            </div>
           </article>
         ))}
       </section>

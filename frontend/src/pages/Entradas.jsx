@@ -18,6 +18,9 @@ export default function Entradas({ usuario }) {
   const [mesAtual, setMesAtual] = useState(hoje.getMonth() + 1);
   const [anoAtual, setAnoAtual] = useState(hoje.getFullYear());
   const [showForm, setShowForm] = useState(false);
+  const [showEditar, setShowEditar] = useState(false);
+  const [itemSelecionado, setItemSelecionado] = useState(null);
+  const [formEditar, setFormEditar] = useState({ categoria: 'Salão', descricao: '', clientes: '', valor: '' });
   const [itens, setItens] = useState([]);
 
   const [form, setForm] = useState({
@@ -57,6 +60,29 @@ export default function Entradas({ usuario }) {
   async function excluir(id) {
     if (!window.confirm('Excluir entrada?')) return;
     await transacaoService.deletar(id);
+    carregar();
+  }
+
+  function abrirEditar(item) {
+    setItemSelecionado(item);
+    setFormEditar({
+      categoria: item.categoria || 'Salão',
+      descricao: cleanDescricao(item.descricao),
+      clientes: String(parseClientes(item.descricao, item.valor)),
+      valor: String(item.valor || ''),
+    });
+    setShowEditar(true);
+  }
+
+  async function salvarEdicao(e) {
+    e.preventDefault();
+    const novaDesc = `${formEditar.descricao} [cli:${Number(formEditar.clientes || 0)}]`;
+    await transacaoService.atualizar(itemSelecionado.id, {
+      categoria: formEditar.categoria,
+      descricao: novaDesc,
+      valor: Number(formEditar.valor),
+    });
+    setShowEditar(false);
     carregar();
   }
 
@@ -104,6 +130,21 @@ export default function Entradas({ usuario }) {
         </form>
       </Modal>
 
+      <Modal open={showEditar} onClose={() => setShowEditar(false)} title="Editar Entrada">
+        <form className="txn-form" onSubmit={salvarEdicao}>
+          <select className="input" value={formEditar.categoria} onChange={(e) => setFormEditar({ ...formEditar, categoria: e.target.value })}>
+            <option>Salão</option>
+            <option>Rodízio</option>
+            <option>Buffet</option>
+            <option>Delivery</option>
+          </select>
+          <input className="input" placeholder="Descrição" value={formEditar.descricao} onChange={(e) => setFormEditar({ ...formEditar, descricao: e.target.value })} required />
+          <input className="input" type="number" min="0" placeholder="Cli./Qtd." value={formEditar.clientes} onChange={(e) => setFormEditar({ ...formEditar, clientes: e.target.value })} />
+          <input className="input" type="number" min="0" step="0.01" placeholder="Líquido" value={formEditar.valor} onChange={(e) => setFormEditar({ ...formEditar, valor: e.target.value })} required />
+          <button className="btn btn-brand" type="submit">Salvar Alterações</button>
+        </form>
+      </Modal>
+
       <section className="table-wrap desktop-table">
         <table className="table">
           <thead>
@@ -134,7 +175,10 @@ export default function Entradas({ usuario }) {
                   <td className="kpi-warn">{formatCurrency(ticket)}</td>
                   <td><span className="pill">{usuario?.nome || 'Sócio'}</span></td>
                   <td>{formatDate(item.data_transacao)} 23:00</td>
-                  <td><button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button">×</button></td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-secondary" onClick={() => abrirEditar(item)} type="button">✏️</button>
+                    <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button">×</button>
+                  </td>
                 </tr>
               );
             })}
@@ -172,7 +216,10 @@ export default function Entradas({ usuario }) {
               <div className="mobile-row"><span className="mobile-key">Líquido</span><span className="mobile-value kpi-positive">{formatCurrency(Number(item.valor || 0))}</span></div>
               <div className="mobile-row"><span className="mobile-key">Ticket</span><span className="mobile-value kpi-warn">{formatCurrency(ticket)}</span></div>
               <div className="mobile-row"><span className="mobile-key">Registrado por</span><span className="mobile-value">{usuario?.nome || 'Sócio'}</span></div>
-              <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button" style={{ marginTop: 10, width: '100%' }}>Excluir</button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => abrirEditar(item)} type="button">✏️ Editar</button>
+                <button className="btn btn-danger-soft" onClick={() => excluir(item.id)} type="button">×</button>
+              </div>
             </article>
           );
         })}
