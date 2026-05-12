@@ -31,7 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/transacoes', autenticar, transacaoRoutes);
 
 // Servir arquivos estáticos do frontend (React)
-const distPath = join(__dirname, '../frontend/dist');
+const distPath = join(__dirname, './public');
 app.use(express.static(distPath));
 
 // Health check (antes do catch-all)
