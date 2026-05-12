@@ -220,9 +220,15 @@ export default function DespesasFixas({ usuario }) {
             <option>Pago</option>
             <option>A pagar</option>
           </select>
-          <select className="input" value={form.recorrente} onChange={(e) => setForm({ ...form, recorrente: e.target.value })}>
-            <option>Sim</option>
-            <option>Não</option>
+          <select
+            className="input"
+            value={form.recorrente}
+            onChange={(e) => setForm({ ...form, recorrente: e.target.value })}
+            aria-label="Recorrência mensal da conta"
+            title="Recorrência mensal da conta"
+          >
+            <option value="Sim">Recorrente: Sim (repete todo mês)</option>
+            <option value="Não">Recorrente: Não (lançamento único)</option>
           </select>
           <input className="input" type="date" value={form.dataTrasacao} onChange={(e) => setForm({ ...form, dataTrasacao: e.target.value })} required />
           <button className="btn btn-brand" type="submit">Salvar</button>
@@ -240,9 +246,15 @@ export default function DespesasFixas({ usuario }) {
             <option>Pago</option>
             <option>A pagar</option>
           </select>
-          <select className="input" value={formEditar.recorrente} onChange={(e) => setFormEditar({ ...formEditar, recorrente: e.target.value })}>
-            <option>Sim</option>
-            <option>Não</option>
+          <select
+            className="input"
+            value={formEditar.recorrente}
+            onChange={(e) => setFormEditar({ ...formEditar, recorrente: e.target.value })}
+            aria-label="Recorrência mensal da conta"
+            title="Recorrência mensal da conta"
+          >
+            <option value="Sim">Recorrente: Sim (repete todo mês)</option>
+            <option value="Não">Recorrente: Não (lançamento único)</option>
           </select>
           <button className="btn btn-brand" type="submit">Salvar Alterações</button>
         </form>
